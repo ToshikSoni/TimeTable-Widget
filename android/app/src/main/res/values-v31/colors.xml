@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_surface_light">@android:color/system_neutral1_50</color>
+    <color name="widget_on_surface_light">@android:color/system_neutral1_900</color>
+    <color name="widget_on_surface_variant_light">@android:color/system_neutral2_700</color>
+    <color name="widget_on_surface_dim_light">@android:color/system_neutral2_400</color>
+    <color name="widget_track_light">@android:color/system_neutral2_100</color>
+
+    <color name="widget_surface_dark">@android:color/system_neutral1_900</color>
+    <color name="widget_on_surface_dark">@android:color/system_neutral1_50</color>
+    <color name="widget_on_surface_variant_dark">@android:color/system_neutral2_200</color>
+    <color name="widget_on_surface_dim_dark">@android:color/system_neutral2_500</color>
+    <color name="widget_track_dark">@android:color/system_neutral2_800</color>
+</resources>

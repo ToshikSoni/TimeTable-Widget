@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="widget_next_class_label">Next class</string>
+    <string name="widget_next_class_description">Your current or upcoming class at a glance, with a live progress bar.</string>
+    <string name="widget_today_label">Today</string>
+    <string name="widget_today_description">Today\'s classes, with what\'s done and what\'s left.</string>
+
+    <string name="widget_now">NOW</string>
+    <string name="widget_next">NEXT</string>
+    <string name="widget_until">until %1$s</string>
+    <string name="widget_at">at %1$s</string>
+    <string name="widget_in">in %1$s</string>
+    <string name="widget_left">%1$s left</string>
+    <string name="widget_starting_now">starting now</string>
+    <string name="widget_duration_minutes">%1$d min</string>
+    <string name="widget_duration_hours">%1$d h</string>
+    <string name="widget_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="widget_tomorrow">Tomorrow</string>
+    <string name="widget_separator" translatable="false">" · "</string>
+
+    <string name="widget_done_for_today">Done for today</string>
+    <string name="widget_no_classes_today">No classes today</string>
+    <string name="widget_no_classes">No classes scheduled</string>
+    <string name="widget_tap_to_open">Tap to open Cadence</string>
+    <string name="widget_refresh_hint">Open Cadence to refresh</string>
+
+    <string name="widget_left_count">%1$d left</string>
+    <string name="widget_all_done">All done</string>
+    <string name="widget_more">+%1$d more</string>
+    <string name="widget_free_day">Free day</string>
+    <string name="widget_next_up">Next: %1$s</string>
+    <string name="widget_exam">Exam</string>
+
+    <!-- Sample content for the widget picker previews. -->
+    <string name="widget_preview_title">Cloud Security</string>
+    <string name="widget_preview_location">BYOD Lab · KKH</string>
+    <string name="widget_preview_until">until 10:30</string>
+    <string name="widget_preview_left">25 min left</string>
+    <string name="widget_preview_date">Thursday, 22 Oct</string>
+    <string name="widget_preview_remaining">3 left</string>
+    <string name="widget_preview_title_2">Operating Systems</string>
+    <string name="widget_preview_room_2">LT-204</string>
+    <string name="widget_preview_title_3">Compiler Design Lab</string>
+    <string name="widget_preview_room_3">CC Lab 3</string>
+</resources>
