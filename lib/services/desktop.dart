@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:window_manager/window_manager.dart';
 
 import '../core/models.dart';
 import '../core/store.dart';
+import 'autostart.dart';
 
 /// Window, tray and autostart integration for Windows and Linux.
 class DesktopShell with WindowListener {
@@ -39,7 +39,6 @@ class DesktopShell with WindowListener {
     await windowManager.setPreventClose(true);
     windowManager.addListener(this);
 
-    _setUpAutostart();
     _setUpTray();
 
     if (startWidget) {
@@ -53,21 +52,15 @@ class DesktopShell with WindowListener {
 
   // Autostart --------------------------------------------------------------
 
-  void _setUpAutostart() {
+  late final Autostart _autostart = Autostart(
     // AppImages run from a temporary mount; autostart must point at the
     // .AppImage file itself.
-    final appImage = Platform.environment['APPIMAGE'];
-    launchAtStartup.setup(
-      appName: 'Cadence',
-      appPath: appImage ?? Platform.resolvedExecutable,
-      packageName: 'io.github.toshiksoni.cadence',
-      args: const ['--hidden'],
-    );
-  }
+    executable: Platform.environment['APPIMAGE'] ?? Platform.resolvedExecutable,
+  );
 
   Future<bool> isLaunchAtStartupEnabled() async {
     try {
-      return await launchAtStartup.isEnabled();
+      return await _autostart.isEnabled();
     } catch (_) {
       return false;
     }
@@ -76,9 +69,9 @@ class DesktopShell with WindowListener {
   Future<void> setLaunchAtStartup(bool enabled) async {
     try {
       if (enabled) {
-        await launchAtStartup.enable();
+        await _autostart.enable();
       } else {
-        await launchAtStartup.disable();
+        await _autostart.disable();
       }
     } catch (e) {
       debugPrint('Autostart change failed: $e');

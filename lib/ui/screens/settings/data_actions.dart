@@ -30,25 +30,14 @@ class DataActions {
     required List<String> extensions,
   }) async {
     try {
-      if (Platform.isAndroid || Platform.isIOS) {
-        final path = await FilePicker.saveFile(
-          dialogTitle: 'Save file',
-          fileName: fileName,
-          bytes: bytes,
-          type: FileType.custom,
-          allowedExtensions: extensions,
-        );
-        return path != null;
-      }
-      final path = await FilePicker.saveFile(
+      final saved = await FilePicker.saveFile(
         dialogTitle: 'Save file',
         fileName: fileName,
+        bytes: bytes,
         type: FileType.custom,
         allowedExtensions: extensions,
       );
-      if (path == null) return false;
-      await File(path).writeAsBytes(bytes, flush: true);
-      return true;
+      return saved != null;
     } catch (e) {
       if (context.mounted) context.toast('Couldn’t save the file: $e');
       return false;
@@ -90,14 +79,9 @@ class DataActions {
 
   static Future<void> importFile(BuildContext context) async {
     try {
-      final result = await FilePicker.pickFiles(
-        dialogTitle: 'Import Cadence file',
-        type: FileType.any,
-        withData: true,
-      );
-      final file = result?.files.single;
+      final file = await FilePicker.pickFile(dialogTitle: 'Import Cadence file');
       if (file == null) return;
-      final bytes = file.bytes ?? await File(file.path!).readAsBytes();
+      final bytes = await file.xFile.readAsBytes();
       if (!context.mounted) return;
       final message = context.readStore.importJson(utf8.decode(bytes));
       context.toast(message);
