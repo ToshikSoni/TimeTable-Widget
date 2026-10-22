@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=Cadence
+GenericName=Timetable
+Comment=Your class timetable with reminders, alarms and a desktop widget
+Exec=cadence %U
+Icon=io.github.toshiksoni.cadence
+Terminal=false
+Categories=Office;Education;Calendar;Utility;
+Keywords=timetable;schedule;class;lecture;college;school;reminder;alarm;attendance;widget;
+StartupNotify=true
+StartupWMClass=io.github.toshiksoni.cadence

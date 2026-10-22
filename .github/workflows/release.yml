@@ -1,0 +1,284 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release, e.g. v1.2.0 (created on the selected branch if it doesn't exist yet)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.7
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+    steps:
+      - id: v
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            tag="${INPUT_TAG}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          case "$tag" in v*) ;; *) tag="v${tag}" ;; esac
+          version="${tag#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::'$tag' is not a valid version tag (expected vMAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+          case "$version" in *-*) prerelease=true ;; *) prerelease=false ;; esac
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+          echo "Releasing $tag (version $version, prerelease: $prerelease)"
+
+  windows:
+    name: Windows installer & portable
+    needs: version
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build
+        run: flutter build windows --release --build-name=${{ env.VERSION }}
+
+      - name: Portable zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" `
+            -DestinationPath "dist\Cadence-$env:VERSION-windows-x64-portable.zip"
+
+      - name: Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) {
+            $default = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+            if (-not (Test-Path $default)) {
+              choco install innosetup --no-progress -y
+            }
+            $iscc = $default
+          }
+          & $iscc `
+            "/DAppVersion=$env:VERSION" `
+            "/DSourceDir=$PWD\build\windows\x64\runner\Release" `
+            "/DOutputBaseFilename=Cadence-$env:VERSION-windows-x64-setup" `
+            "/O$PWD\dist" `
+            packaging\windows\cadence.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: dist/*
+          if-no-files-found: error
+
+  linux:
+    name: Linux tarball, .deb & AppImage
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake pkg-config ninja-build \
+            libgtk-3-dev libx11-dev libxi-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            desktop-file-utils file
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build
+        run: flutter build linux --release --build-name="$VERSION"
+
+      - name: Tarball
+        run: |
+          mkdir -p dist staging
+          cp -a build/linux/x64/release/bundle "staging/Cadence-$VERSION-linux-x64"
+          tar -C staging -czf "dist/Cadence-$VERSION-linux-x64.tar.gz" "Cadence-$VERSION-linux-x64"
+
+      - name: Debian package
+        run: bash packaging/linux/build_deb.sh "$VERSION" build/linux/x64/release/bundle dist
+
+      - name: AppImage
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/appimagetool" \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          APPIMAGETOOL="$RUNNER_TEMP/appimagetool" \
+            bash packaging/linux/build_appimage.sh "$VERSION" build/linux/x64/release/bundle dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: dist/*
+          if-no-files-found: error
+
+  android:
+    name: Android APKs
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Set up release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] \
+             && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            keystore="$RUNNER_TEMP/release.jks"
+            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore"
+            {
+              echo "CADENCE_KEYSTORE_PATH=$keystore"
+              echo "CADENCE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+              echo "CADENCE_KEY_ALIAS=$KEY_ALIAS"
+              echo "CADENCE_KEY_PASSWORD=$KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+            echo "Release keystore configured."
+          else
+            echo "::warning::Android signing secrets are not set; APKs will be signed with the debug key and cannot update a properly signed install."
+          fi
+
+      - name: Build split APKs
+        run: |
+          flutter build apk --release --split-per-abi --build-name="$VERSION"
+          mkdir -p dist
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            src="build/app/outputs/flutter-apk/app-${abi}-release.apk"
+            if [ -f "$src" ]; then
+              cp "$src" "dist/Cadence-${VERSION}-android-${abi}.apk"
+            fi
+          done
+
+      - name: Build universal APK
+        run: |
+          flutter build apk --release --build-name="$VERSION"
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/Cadence-${VERSION}-android-universal.apk"
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-android
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [version, windows, linux, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: |
+          rm -f SHA256SUMS.txt
+          sha256sum -- * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          : > release-notes.md
+          if [ -f CHANGELOG.md ]; then
+            awk -v ver="$VERSION" '
+              BEGIN { hdr = "## [" ver "]" }
+              index($0, hdr) == 1 { found = 1; next }
+              found && /^## / { exit }
+              found { print }
+            ' CHANGELOG.md > release-notes.md
+            # Trim leading and trailing blank lines.
+            sed -i -e '/./,$!d' release-notes.md
+            sed -i -e ':a' -e '/^\n*$/{$d;N;ba' -e '}' release-notes.md
+          fi
+          if [ -s release-notes.md ]; then
+            echo "Using CHANGELOG.md section for $VERSION:"
+            cat release-notes.md
+          else
+            echo "No CHANGELOG.md section for $VERSION; using generated notes only."
+          fi
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: Cadence ${{ needs.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          draft: false
+          prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          body_path: release-notes.md
+          fail_on_unmatched_files: true
+          files: dist/*

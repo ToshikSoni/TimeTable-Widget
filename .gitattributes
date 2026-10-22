@@ -1,0 +1,30 @@
+# Normalise line endings to LF in the repository.
+* text=auto eol=lf
+
+# Windows-only scripts need CRLF.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.iss   text eol=crlf
+
+# Shell scripts must stay LF even when checked out on Windows.
+*.sh    text eol=lf
+
+# Binary files
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.gif   binary
+*.ico   binary
+*.icns  binary
+*.wav   binary
+*.mp3   binary
+*.ogg   binary
+*.ttf   binary
+*.otf   binary
+*.jar   binary
+*.jks   binary
+*.keystore binary
+
+# Generated files
+pubspec.lock linguist-generated=true

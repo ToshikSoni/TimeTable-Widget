@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Toshik Soni -->
+<component type="desktop-application">
+  <id>io.github.toshiksoni.cadence</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Cadence</name>
+  <summary>Class timetable with widgets, reminders and alarms</summary>
+  <developer id="io.github.toshiksoni">
+    <name>Toshik Soni</name>
+  </developer>
+
+  <description>
+    <p>
+      Cadence keeps your class timetable one glance away. Set up your week once,
+      then see what is on now and what comes next from the app, a desktop widget
+      or your phone's home screen.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Week and day views of your timetable</li>
+      <li>A desktop widget that shows the current and next class</li>
+      <li>Android home-screen widgets</li>
+      <li>Reminders and alarms before each class</li>
+      <li>Lab groups and electives, so you only see the classes you attend</li>
+      <li>Day overrides, such as a Saturday that follows Monday's timetable</li>
+      <li>Attendance tracker</li>
+      <li>Tasks and exams alongside your classes</li>
+      <li>Start on sign-in and run from the system tray</li>
+      <li>Light and dark themes</li>
+      <li>JSON backup and restore, plus ICS export to other calendars</li>
+      <li>Fully offline: your data stays on your device and nothing is tracked</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.toshiksoni.cadence.desktop</launchable>
+  <provides>
+    <binary>cadence</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/ToshikSoni/TimeTable-Widget</url>
+  <url type="bugtracker">https://github.com/ToshikSoni/TimeTable-Widget/issues</url>
+  <url type="vcs-browser">https://github.com/ToshikSoni/TimeTable-Widget</url>
+  <url type="contribute">https://github.com/ToshikSoni/TimeTable-Widget/blob/main/CONTRIBUTING.md</url>
+
+  <categories>
+    <category>Office</category>
+    <category>Education</category>
+    <category>Calendar</category>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword>timetable</keyword>
+    <keyword>schedule</keyword>
+    <keyword>class</keyword>
+    <keyword>reminder</keyword>
+    <keyword>attendance</keyword>
+    <keyword>widget</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1" />
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+
+  <releases>
+    <release version="1.0.0" date="2026-10-22">
+      <description>
+        <p>First public release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

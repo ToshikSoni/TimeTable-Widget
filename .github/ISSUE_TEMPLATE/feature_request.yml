@@ -1,0 +1,69 @@
+name: Feature request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. For open-ended ideas or questions, [Discussions](https://github.com/ToshikSoni/TimeTable-Widget/discussions) may be a better fit.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which platforms would this apply to?
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - Android
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Cadence version
+      description: The version you're using, if any.
+      placeholder: "1.0.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation, e.g. "My college has alternating A/B weeks and …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How you'd like it to work.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you use today or other approaches you thought about.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Mockups, screenshots or extra context
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd be willing to open a pull request for this.
+          required: false
