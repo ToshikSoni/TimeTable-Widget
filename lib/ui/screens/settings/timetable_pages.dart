@@ -74,7 +74,9 @@ class TimetablesPage extends StatelessWidget {
                 subtitle: Text(
                   [
                     if (t.subtitle.isNotEmpty) t.subtitle,
-                    '${t.subjects.length} subjects · ${t.entries.length} classes',
+                    t.kind == TimetableKind.school
+                        ? '${t.subjects.length} subjects · ${t.kind.count(t.entries.length)}'
+                        : 'Routine · ${t.kind.count(t.entries.length)}',
                   ].join('\n'),
                 ),
                 isThreeLine: t.subtitle.isNotEmpty,
@@ -90,7 +92,7 @@ class TimetablesPage extends StatelessWidget {
                         if (await confirm(
                           context,
                           title: 'Delete “${t.name}”?',
-                          message: 'Its classes, holidays and attendance records will be removed.',
+                          message: 'Everything in it will be removed from this device.',
                         )) {
                           store.removeTimetable(t.id);
                         }
@@ -118,8 +120,27 @@ class TimetablesPage extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
+            leading: const Icon(Icons.work_outline_rounded),
+            title: const Text('New daily routine'),
+            subtitle: const Text('Work, gym, study blocks, sleep — any day plan'),
+            onTap: () {
+              Navigator.pop(sheet);
+              showEditor(
+                context,
+                TimetableDetailsEditor(
+                  timetable: Timetable(
+                    name: 'My routine',
+                    kind: TimetableKind.routine,
+                    workingDays: [1, 2, 3, 4, 5, 6, 7],
+                  ),
+                  isNew: true,
+                ),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.edit_calendar_outlined),
-            title: const Text('Start from scratch'),
+            title: const Text('New class timetable'),
             subtitle: const Text('With a typical bell schedule you can adjust'),
             onTap: () {
               Navigator.pop(sheet);
@@ -135,7 +156,7 @@ class TimetablesPage extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.file_open_outlined),
             title: const Text('Import a file'),
-            subtitle: const Text('A timetable a classmate shared, or a backup'),
+            subtitle: const Text('Shared by a classmate, a backup, or a .tta file from TimeTable'),
             onTap: () {
               Navigator.pop(sheet);
               DataActions.importFile(context);
@@ -143,11 +164,20 @@ class TimetablesPage extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.auto_awesome_outlined),
-            title: const Text('Example timetable'),
+            title: const Text('Example class timetable'),
             subtitle: const Text('B.Tech CSE, Semester VI'),
             onTap: () {
               Navigator.pop(sheet);
               context.readStore.loadSample();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.wb_twilight_rounded),
+            title: const Text('Example routine'),
+            subtitle: const Text('A typical working week'),
+            onTap: () {
+              Navigator.pop(sheet);
+              context.readStore.loadSample(routine: true);
             },
           ),
           const SizedBox(height: 8),

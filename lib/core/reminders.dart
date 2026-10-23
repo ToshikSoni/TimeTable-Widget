@@ -64,10 +64,31 @@ class ReminderPlanner {
         final plan = ScheduleEngine.dayPlan(tt, day);
         final classes = plan.active;
 
+        for (final o in classes) {
+          final lead = o.entry.reminderMinutes ?? o.subject?.reminderMinutes ?? s.reminderMinutes;
+          if (o.entry.alarm && lead >= 0) {
+            // An alarm the user set on this entry explicitly, e.g. "Wake up".
+            add(
+              PlannedReminder(
+                key: 'ring|${o.key}',
+                kind: ReminderKind.alarm,
+                at: o.start.subtract(Duration(minutes: lead)),
+                title: o.title,
+                body: [
+                  fmt.rangeOf(o.start, o.end),
+                  if (o.room != null) o.room!,
+                  if (o.entry.note != null) o.entry.note!,
+                ].join(' · '),
+                payload: 'alarm:${o.key}',
+              ),
+            );
+          }
+        }
+
         if (s.remindersEnabled) {
           for (final o in classes) {
-            final lead = o.subject?.reminderMinutes ?? s.reminderMinutes;
-            if (lead < 0) continue;
+            final lead = o.entry.reminderMinutes ?? o.subject?.reminderMinutes ?? s.reminderMinutes;
+            if (lead < 0 || o.entry.alarm) continue;
             final where = [
               if (o.room != null) o.room!,
               if (o.teacher != null) o.teacher!.displayName,
@@ -112,7 +133,7 @@ class ReminderPlanner {
                 at: first.start.subtract(Duration(minutes: s.morningAlarmLead)),
                 title: 'Time to get going',
                 body:
-                    'First class: ${first.title} at ${fmt.time(first.start)}'
+                    'First ${tt.kind.item}: ${first.title} at ${fmt.time(first.start)}'
                     '${first.room != null ? ' in ${first.room}' : ''}',
                 payload: 'alarm:${dateKey(day)}',
               ),
@@ -130,7 +151,7 @@ class ReminderPlanner {
                   key: 'summary|${dateKey(day)}',
                   kind: ReminderKind.summary,
                   at: at,
-                  title: '$n ${n == 1 ? 'class' : 'classes'} today$banner',
+                  title: '${tt.kind.count(n)} today$banner',
                   body:
                       '${fmt.time(first.start)} – ${fmt.time(plan.lastEnd!)}'
                       ' · first up: ${first.shortTitle}'

@@ -97,6 +97,10 @@ class _ShellState extends State<Shell> {
   Widget build(BuildContext context) {
     final wide = context.isMedium;
     final badge = _taskBadge(context);
+    // Routines don't track attendance, so that tab is hidden for them.
+    final school = context.store.timetable?.kind != TimetableKind.routine;
+    final visible = [0, 1, 2, if (school) 3, 4];
+    if (!visible.contains(_index)) _index = 0;
 
     Widget icon(int i, bool selected) {
       final d = _destinations[i];
@@ -122,9 +126,9 @@ class _ShellState extends State<Shell> {
     );
 
     final shortcuts = <ShortcutActivator, VoidCallback>{
-      for (var i = 0; i < _destinations.length; i++)
+      for (final (n, i) in visible.indexed)
         SingleActivator(
-          LogicalKeyboardKey(LogicalKeyboardKey.digit1.keyId + i),
+          LogicalKeyboardKey(LogicalKeyboardKey.digit1.keyId + n),
           control: true,
         ): () =>
             _select(i),
@@ -157,8 +161,8 @@ class _ShellState extends State<Shell> {
                       NavigationRail(
                         extended: context.isWide,
                         minExtendedWidth: 220,
-                        selectedIndex: _index,
-                        onDestinationSelected: _select,
+                        selectedIndex: visible.indexOf(_index),
+                        onDestinationSelected: (n) => _select(visible[n]),
                         labelType: context.isWide
                             ? NavigationRailLabelType.none
                             : NavigationRailLabelType.all,
@@ -188,7 +192,7 @@ class _ShellState extends State<Shell> {
                               )
                             : null,
                         destinations: [
-                          for (var i = 0; i < _destinations.length; i++)
+                          for (final i in visible)
                             NavigationRailDestination(
                               icon: icon(i, false),
                               selectedIcon: icon(i, true),
@@ -204,11 +208,11 @@ class _ShellState extends State<Shell> {
               : Scaffold(
                   body: body,
                   bottomNavigationBar: NavigationBar(
-                    selectedIndex: _index,
-                    onDestinationSelected: _select,
+                    selectedIndex: visible.indexOf(_index),
+                    onDestinationSelected: (n) => _select(visible[n]),
                     labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                     destinations: [
-                      for (var i = 0; i < _destinations.length; i++)
+                      for (final i in visible)
                         NavigationDestination(
                           icon: icon(i, false),
                           selectedIcon: icon(i, true),

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="widget_next_class_label">Next class</string>
-    <string name="widget_next_class_description">Your current or upcoming class at a glance, with a live progress bar.</string>
+    <string name="widget_next_class_label">Up next</string>
+    <string name="widget_next_class_description">What you are doing now or next, with a live progress bar.</string>
     <string name="widget_today_label">Today</string>
-    <string name="widget_today_description">Today\'s classes, with what\'s done and what\'s left.</string>
+    <string name="widget_today_description">Today\'s schedule, with what\'s done and what\'s left.</string>
 
     <string name="widget_now">NOW</string>
     <string name="widget_next">NEXT</string>
@@ -20,8 +20,8 @@
     <string name="widget_separator" translatable="false">" · "</string>
 
     <string name="widget_done_for_today">Done for today</string>
-    <string name="widget_no_classes_today">No classes today</string>
-    <string name="widget_no_classes">No classes scheduled</string>
+    <string name="widget_no_classes_today">Nothing else today</string>
+    <string name="widget_no_classes">Nothing scheduled</string>
     <string name="widget_tap_to_open">Tap to open Cadence</string>
     <string name="widget_refresh_hint">Open Cadence to refresh</string>
 

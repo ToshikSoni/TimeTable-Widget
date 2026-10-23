@@ -44,7 +44,8 @@ jobs:
             echo "::error::'$tag' is not a valid version tag (expected vMAJOR.MINOR.PATCH)"
             exit 1
           fi
-          case "$version" in *-*) prerelease=true ;; *) prerelease=false ;; esac
+          # 0.x versions and -beta/-rc tags are published as pre-releases.
+          case "$version" in 0.*|*-*) prerelease=true ;; *) prerelease=false ;; esac
           {
             echo "tag=$tag"
             echo "version=$version"
@@ -59,7 +60,7 @@ jobs:
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -98,20 +99,20 @@ jobs:
             packaging\windows\cadence.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-windows
           path: dist/*
           if-no-files-found: error
 
   linux:
-    name: Linux tarball, .deb & AppImage
+    name: Linux tarball, .deb, .rpm & AppImage
     needs: version
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -119,7 +120,7 @@ jobs:
           sudo apt-get install -y clang cmake pkg-config ninja-build \
             libgtk-3-dev libx11-dev libxi-dev \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-            desktop-file-utils file
+            desktop-file-utils file rpm
 
       - uses: subosito/flutter-action@v2
         with:
@@ -141,6 +142,9 @@ jobs:
       - name: Debian package
         run: bash packaging/linux/build_deb.sh "$VERSION" build/linux/x64/release/bundle dist
 
+      - name: RPM package
+        run: bash packaging/linux/build_rpm.sh "$VERSION" build/linux/x64/release/bundle dist
+
       - name: AppImage
         run: |
           curl -fsSL -o "$RUNNER_TEMP/appimagetool" \
@@ -149,9 +153,49 @@ jobs:
           APPIMAGETOOL="$RUNNER_TEMP/appimagetool" \
             bash packaging/linux/build_appimage.sh "$VERSION" build/linux/x64/release/bundle dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-linux
+          path: dist/*
+          if-no-files-found: error
+
+  arch:
+    name: Arch Linux package
+    needs: [version, linux]
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-linux
+          path: linux-dist
+
+      - name: Build with makepkg
+        run: |
+          pacman -Syu --noconfirm --needed base-devel
+          useradd -m builder
+          work=/home/builder/pkg
+          mkdir -p "$work"
+          cp packaging/arch/PKGBUILD "$work/"
+          cp "linux-dist/Cadence-$VERSION-linux-x64.tar.gz" "$work/"
+          cp packaging/linux/io.github.toshiksoni.cadence.desktop \
+             packaging/linux/io.github.toshiksoni.cadence.metainfo.xml \
+             assets/branding/icon-256.png LICENSE "$work/"
+          sed -i "s/^pkgver=.*/pkgver=${VERSION//-/_}/" "$work/PKGBUILD"
+          # makepkg derives the tarball name from pkgver; keep the real one.
+          sed -i "s/Cadence-\${pkgver}-linux-x64/Cadence-$VERSION-linux-x64/g" "$work/PKGBUILD"
+          chown -R builder "$work"
+          su builder -c "cd $work && PKGEXT=.pkg.tar.zst makepkg --nodeps --noconfirm"
+          mkdir -p dist
+          cp "$work"/cadence-bin-*.pkg.tar.zst "dist/cadence-bin-$VERSION-1-x86_64.pkg.tar.zst"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-arch
           path: dist/*
           if-no-files-found: error
 
@@ -162,9 +206,9 @@ jobs:
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -220,7 +264,7 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-android
           path: dist/*
@@ -228,16 +272,16 @@ jobs:
 
   publish:
     name: Publish GitHub Release
-    needs: [version, windows, linux, android]
+    needs: [version, windows, linux, arch, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: release-*
           path: dist
@@ -271,7 +315,7 @@ jobs:
             echo "No CHANGELOG.md section for $VERSION; using generated notes only."
           fi
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           name: Cadence ${{ needs.version.outputs.version }}

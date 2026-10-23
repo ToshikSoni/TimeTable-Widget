@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'models.dart';
 import 'sample_data.dart';
+import 'tta_import.dart';
 
 /// Owns the app's data, persists it as JSON and notifies listeners on change.
 ///
@@ -115,8 +116,8 @@ class AppStore extends ChangeNotifier {
     }
   });
 
-  void loadSample() {
-    final sample = buildSampleTimetable();
+  void loadSample({bool routine = false}) {
+    final sample = routine ? buildSampleRoutine() : buildSampleTimetable();
     addTimetable(
       data.timetables.any((t) => t.id == sample.id) ? sample.duplicate(sample.name) : sample,
     );
@@ -203,6 +204,16 @@ class AppStore extends ChangeNotifier {
   /// Imports either a full backup or a single shared timetable.
   /// Returns a short description of what was imported.
   String importJson(String raw) {
+    if (TtaImporter.looksLikeTta(raw)) {
+      final imported = TtaImporter.parse(raw);
+      for (final (i, t) in imported.indexed) {
+        addTimetable(t, activate: i == 0);
+      }
+      final names = imported.map((t) => '“${t.name}”').join(', ');
+      return imported.length == 1
+          ? 'Imported $names'
+          : 'Imported ${imported.length} routines: $names';
+    }
     final decoded = jsonDecode(raw);
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Not a Cadence file');

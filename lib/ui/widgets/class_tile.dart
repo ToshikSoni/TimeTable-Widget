@@ -18,10 +18,14 @@ class ClassTile extends StatelessWidget {
     required this.occurrence,
     required this.now,
     this.showAttendance = true,
+    this.carried = false,
   });
 
   final Occurrence occurrence;
   final DateTime now;
+
+  /// Started the previous day and runs into this one (e.g. sleep).
+  final bool carried;
   final bool showAttendance;
 
   @override
@@ -142,11 +146,12 @@ class ClassTile extends StatelessWidget {
                   letterSpacing: 0.4,
                 ),
               ),
-            if (o.entry.kind != ClassKind.lecture)
+            if (o.countsAttendance && o.entry.kind != ClassKind.lecture)
               Tag(o.entry.kind.label.toUpperCase(), color: tone.accent, dense: true),
             if (o.entry.group != null) Tag(o.entry.group!, color: tone.accent, dense: true),
             if (o.extra) Tag('EXTRA', color: context.colors.tertiary, dense: true),
             if (o.cancelled) Tag('CANCELLED', color: context.colors.error, dense: true),
+            if (carried) Tag('SINCE YESTERDAY', color: tone.accent, dense: true),
             if (live) Tag('NOW', color: tone.accent, icon: Icons.circle, dense: true),
           ],
         ),
@@ -366,11 +371,21 @@ class _ClassDetails extends StatelessWidget {
                       onPressed: () => launchUrl(Uri(scheme: 'mailto', path: o.teacher!.email)),
                     ),
             ),
-          _InfoRow(
-            Icons.category_outlined,
-            o.entry.kind.label,
-            o.entry.group == null ? 'Everyone' : 'Group ${o.entry.group}',
-          ),
+          if (o.countsAttendance)
+            _InfoRow(
+              Icons.category_outlined,
+              o.entry.kind.label,
+              o.entry.group == null ? 'Everyone' : 'Group ${o.entry.group}',
+            ),
+          if (o.entry.alarm || o.entry.doNotDisturb)
+            _InfoRow(
+              o.entry.alarm ? Icons.alarm_rounded : Icons.do_not_disturb_on_outlined,
+              [
+                if (o.entry.alarm) 'Rings an alarm',
+                if (o.entry.doNotDisturb) 'Do not disturb',
+              ].join(' · '),
+              'Alerts',
+            ),
           if (o.entry.note != null && o.entry.note!.isNotEmpty)
             _InfoRow(Icons.notes_rounded, o.entry.note!, 'Note'),
           if (o.changeReason != null)
@@ -412,9 +427,7 @@ class _ClassDetails extends StatelessWidget {
                     size: 18,
                   ),
                   label: Text(
-                    o.cancelled
-                        ? 'Restore class'
-                        : 'Cancel on ${DateFormat('d MMM').format(o.date)}',
+                    o.cancelled ? 'Restore' : 'Cancel on ${DateFormat('d MMM').format(o.date)}',
                   ),
                   onPressed: () {
                     store.toggleCancelled(o.date, o.entry.id);
@@ -424,7 +437,7 @@ class _ClassDetails extends StatelessWidget {
               if (o.extra)
                 ActionChip(
                   avatar: const Icon(Icons.delete_outline_rounded, size: 18),
-                  label: const Text('Remove extra class'),
+                  label: const Text('Remove'),
                   onPressed: () {
                     final change = tt.changes.where((c) => c.extra?.id == o.entry.id);
                     if (change.isNotEmpty) store.removeChange(change.first.id);
@@ -434,7 +447,7 @@ class _ClassDetails extends StatelessWidget {
               if (!o.extra)
                 ActionChip(
                   avatar: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Edit weekly class'),
+                  label: const Text('Edit every week'),
                   onPressed: () {
                     Navigator.pop(context);
                     showEditor(context, EntryEditor(entry: o.entry));

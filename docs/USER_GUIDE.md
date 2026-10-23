@@ -4,6 +4,7 @@ This guide covers everything Cadence can do. If you just want to get going, the
 first two sections are enough.
 
 - [Setting up your timetable](#setting-up-your-timetable)
+- [Daily routines](#daily-routines)
 - [Daily use](#daily-use)
 - [Widgets](#widgets)
 - [Reminders and the wake-up alarm](#reminders-and-the-wake-up-alarm)
@@ -35,6 +36,30 @@ To type one in yourself:
 
 Tip: on the desktop you can long-press an empty spot in the week grid to add a
 class at that time.
+
+## Daily routines
+
+Cadence isn't only for college. Create a routine from **Settings → Timetables →
++ → New daily routine** (or pick *My work & daily routine* on first launch) and
+add activities from **Week → + Activity**:
+
+- Give each activity a name, a colour and, optionally, a place and a note.
+- Pick the days (*Every day* and *Weekdays* shortcuts are there).
+- An end time earlier than the start means it **ends the next day** — sleep
+  from 23:30 to 07:00, a night shift, a late study block. The next morning it
+  shows at the top of Today as *since yesterday*.
+- Under **Alerts** choose when to be reminded, whether it should **ring as an
+  alarm**, and (Android) whether to **silence the phone** with Do Not Disturb
+  while it runs. Do Not Disturb needs a one-time permission; Cadence only turns
+  it off again if it was the one that turned it on, and alarms still ring.
+
+Routines hide school-only tools (subjects, teachers, groups, attendance). You can
+keep a routine and a class timetable side by side and switch between them in
+*Settings → Timetables*.
+
+**Moving from the TimeTable app?** Export a backup there (a `.tta` file) and use
+**Settings → Backup & export → Import**. Each of its weeks becomes a routine,
+with days, times, colours, reminders, alarms and Do Not Disturb carried over.
 
 ## Daily use
 

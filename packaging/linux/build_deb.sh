@@ -85,11 +85,11 @@ Depends: libgtk-3-0, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0, gstreame
 Section: utils
 Priority: optional
 Homepage: https://github.com/ToshikSoni/TimeTable-Widget
-Description: Class timetable with widgets, reminders and alarms
- Cadence keeps your class timetable one glance away, with week and day
- views, a desktop widget, reminders and alarms, lab groups and electives,
- attendance tracking, tasks and exams. It works fully offline and stores
- all data locally.
+Description: Timetable and daily planner with widgets, reminders and alarms
+ Cadence keeps your class timetable or daily routine one glance away, with
+ week and day views, a desktop widget, reminders, alarms and Do Not Disturb
+ blocks, lab groups and electives, attendance tracking, tasks and exams.
+ It works fully offline and stores all data locally.
 CONTROL
 chmod 0644 "$PKG/DEBIAN/control"
 

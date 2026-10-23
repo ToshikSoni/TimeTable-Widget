@@ -27,6 +27,26 @@ class _WeekScreenState extends State<WeekScreen> {
   DateTime? _monday;
   bool _list = false;
   final _gridKey = GlobalKey();
+  final _scroll = ScrollController();
+  bool _scrolledToNow = false;
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Long days (routines span 24 hours) open at the current time.
+  void _scrollToNow(Timetable tt, List<DateTime> days, DateTime now) {
+    if (_scrolledToNow) return;
+    _scrolledToNow = true;
+    final (first, _) = WeekGrid.range(tt, [for (final d in days) ScheduleEngine.dayPlan(tt, d)]);
+    final offset = (now.hour * 60 + now.minute - first - 90) * WeekGrid.ppm;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients || offset <= 0) return;
+      _scroll.jumpTo(offset.clamp(0, _scroll.position.maxScrollExtent));
+    });
+  }
 
   DateTime _mondayOf(DateTime d) => dateOnly(d).subtract(Duration(days: d.weekday - 1));
 
@@ -38,6 +58,7 @@ class _WeekScreenState extends State<WeekScreen> {
     final monday = _monday ?? _mondayOf(now);
     final days = _visibleDays(context, tt, monday);
     final thisWeek = monday == _mondayOf(now);
+    if (thisWeek && !_list) _scrollToNow(tt, days, now);
     final sunday = monday.add(const Duration(days: 6));
     final rangeLabel = monday.month == sunday.month
         ? '${monday.day} – ${DateFormat('d MMMM').format(sunday)}'
@@ -122,7 +143,7 @@ class _WeekScreenState extends State<WeekScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showEditor(context, const EntryEditor()),
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Class'),
+        label: Text(tt.kind.itemTitle),
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
@@ -130,6 +151,7 @@ class _WeekScreenState extends State<WeekScreen> {
             ? _WeekList(key: const ValueKey('list'), timetable: tt, days: days, now: now)
             : SingleChildScrollView(
                 key: const ValueKey('grid'),
+                controller: _scroll,
                 padding: const EdgeInsets.fromLTRB(8, 0, 12, 110),
                 child: RepaintBoundary(
                   key: _gridKey,
@@ -168,18 +190,20 @@ class WeekGrid extends StatelessWidget {
   final List<DateTime> days;
   final DateTime now;
 
-  static const _ppm = 1.15; // pixels per minute
-  static const _headerHeight = 58.0;
+  static const ppm = 1.15; // pixels per minute
+  static const _ppm = ppm;
+  static const headerHeight = 58.0;
+  static const _headerHeight = headerHeight;
 
-  @override
-  Widget build(BuildContext context) {
-    final plans = [for (final d in days) ScheduleEngine.dayPlan(timetable, d)];
+  /// The visible time range in minutes, rounded out to whole hours.
+  static (int, int) range(Timetable timetable, List<DayPlan> plans) {
     var first = 24 * 60, last = 0;
     for (final p in plans) {
       for (final o in p.occurrences) {
         first = math.min(first, o.entry.start);
-        last = math.max(last, o.entry.end);
+        last = math.max(last, math.min(o.entry.end, 24 * 60));
       }
+      if (p.carryOver.isNotEmpty) first = 0;
     }
     for (final p in timetable.periods) {
       first = math.min(first, p.start);
@@ -189,8 +213,13 @@ class WeekGrid extends StatelessWidget {
       first = 8 * 60;
       last = 17 * 60;
     }
-    first = (first ~/ 60) * 60;
-    last = ((last + 59) ~/ 60) * 60;
+    return ((first ~/ 60) * 60, math.min(24 * 60, ((last + 59) ~/ 60) * 60));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plans = [for (final d in days) ScheduleEngine.dayPlan(timetable, d)];
+    final (first, last) = range(timetable, plans);
     final height = (last - first) * _ppm;
     final fmt = context.timeFormat;
     final axisWidth = context.use24h ? 44.0 : 54.0;
@@ -360,7 +389,15 @@ class _DayColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lanes = ScheduleEngine.layoutLanes(plan.occurrences);
+    // Overnight entries are cut at midnight and continue at the top of the
+    // next day's column.
+    const day = 24 * 60;
+    final segments = <({Occurrence o, int start, int end})>[
+      for (final o in plan.carryOver) (o: o, start: 0, end: o.entry.end - day),
+      for (final o in plan.occurrences)
+        (o: o, start: o.entry.start, end: math.min(o.entry.end, day)),
+    ];
+    final lanes = ScheduleEngine.layoutSegments(segments, (s) => s.start, (s) => s.end);
     final isToday = plan.date == dateOnly(now);
     final nowMinutes = now.hour * 60 + now.minute;
 
@@ -408,13 +445,13 @@ class _DayColumn extends StatelessWidget {
                 ),
               ),
             ),
-          for (final o in plan.occurrences)
+          for (final seg in segments)
             Positioned(
-              top: (o.entry.start - first) * ppm + 1.5,
-              height: math.max(18, o.entry.duration * ppm - 3),
-              left: 2 + lanes[o]!.lane * (width - 4) / lanes[o]!.lanes,
-              width: (width - 4) / lanes[o]!.lanes - (lanes[o]!.lanes > 1 ? 2 : 0),
-              child: _Block(occurrence: o, now: now),
+              top: (seg.start - first) * ppm + 1.5,
+              height: math.max(18, (seg.end - seg.start) * ppm - 3),
+              left: 2 + lanes[seg]!.lane * (width - 4) / lanes[seg]!.lanes,
+              width: (width - 4) / lanes[seg]!.lanes - (lanes[seg]!.lanes > 1 ? 2 : 0),
+              child: _Block(occurrence: seg.o, now: now),
             ),
           if (isToday && nowMinutes >= first)
             Positioned(
@@ -569,7 +606,7 @@ class _WeekList extends StatelessWidget {
                       Text(
                         plan.isHoliday
                             ? 'Holiday${plan.special?.label != null ? ' · ${plan.special!.label}' : ''}'
-                            : 'No classes',
+                            : 'Nothing scheduled',
                         style: context.text.bodyMedium?.copyWith(
                           color: context.colors.onSurfaceVariant,
                         ),

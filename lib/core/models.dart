@@ -210,6 +210,10 @@ class ClassEntry {
     this.kind = ClassKind.lecture,
     this.group,
     this.note,
+    this.color,
+    this.reminderMinutes,
+    this.alarm = false,
+    this.doNotDisturb = false,
   }) : id = id ?? newId();
 
   final String id;
@@ -231,7 +235,23 @@ class ClassEntry {
   final String? group;
   final String? note;
 
+  /// ARGB colour for entries without a subject (routines, activities).
+  final int? color;
+
+  /// Overrides the subject / global reminder lead time. `null` inherits,
+  /// a negative value disables reminders for this entry.
+  final int? reminderMinutes;
+
+  /// Ring a full-screen alarm instead of showing a notification.
+  final bool alarm;
+
+  /// Silence the phone (Android Do Not Disturb) while this runs.
+  final bool doNotDisturb;
+
   int get duration => end - start;
+
+  /// Ends after midnight, e.g. sleep from 23:30 to 07:00.
+  bool get overnight => end > 24 * 60;
 
   ClassEntry copyWith({
     int? weekday,
@@ -247,6 +267,11 @@ class ClassEntry {
     String? group,
     bool clearGroup = false,
     String? note,
+    int? color,
+    int? reminderMinutes,
+    bool clearReminder = false,
+    bool? alarm,
+    bool? doNotDisturb,
     bool keepId = true,
   }) => ClassEntry(
     id: keepId ? id : null,
@@ -260,6 +285,10 @@ class ClassEntry {
     kind: kind ?? this.kind,
     group: clearGroup ? null : group ?? this.group,
     note: note ?? this.note,
+    color: color ?? this.color,
+    reminderMinutes: clearReminder ? null : reminderMinutes ?? this.reminderMinutes,
+    alarm: alarm ?? this.alarm,
+    doNotDisturb: doNotDisturb ?? this.doNotDisturb,
   );
 
   Map<String, dynamic> toJson() => {
@@ -274,6 +303,10 @@ class ClassEntry {
     'kind': kind.name,
     if (group != null) 'group': group,
     if (note != null) 'note': note,
+    if (color != null) 'color': color,
+    if (reminderMinutes != null) 'reminderMinutes': reminderMinutes,
+    if (alarm) 'alarm': true,
+    if (doNotDisturb) 'doNotDisturb': true,
   };
 
   factory ClassEntry.fromJson(Map<String, dynamic> j) => ClassEntry(
@@ -288,6 +321,10 @@ class ClassEntry {
     kind: ClassKind.parse(j['kind'] as String?),
     group: j['group'] as String?,
     note: j['note'] as String?,
+    color: j['color'] as int?,
+    reminderMinutes: j['reminderMinutes'] as int?,
+    alarm: j['alarm'] as bool? ?? false,
+    doNotDisturb: j['doNotDisturb'] as bool? ?? false,
   );
 }
 
@@ -377,10 +414,29 @@ class ClassChange {
 
 enum AttendanceStatus { present, absent, cancelled }
 
+/// What a timetable is for. It changes wording and which tools are shown:
+/// school timetables have subjects, teachers, groups and attendance; routines
+/// are plain activities (work, gym, sleep…).
+enum TimetableKind {
+  school('Classes', 'class', 'classes'),
+  routine('Routine', 'activity', 'activities');
+
+  const TimetableKind(this.label, this.item, this.items);
+  final String label;
+
+  /// Lower-case noun for one entry, e.g. "class".
+  final String item;
+  final String items;
+
+  String get itemTitle => item[0].toUpperCase() + item.substring(1);
+  String count(int n) => '$n ${n == 1 ? item : items}';
+}
+
 class Timetable {
   Timetable({
     String? id,
     required this.name,
+    this.kind = TimetableKind.school,
     this.institution,
     this.section,
     this.validFrom,
@@ -408,6 +464,7 @@ class Timetable {
 
   final String id;
   String name;
+  TimetableKind kind;
   String? institution;
   String? section;
   DateTime? validFrom;
@@ -447,6 +504,7 @@ class Timetable {
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
+    if (kind != TimetableKind.school) 'kind': kind.name,
     if (institution != null) 'institution': institution,
     if (section != null) 'section': section,
     if (validFrom != null) 'validFrom': dateKey(validFrom!),
@@ -466,6 +524,7 @@ class Timetable {
   factory Timetable.fromJson(Map<String, dynamic> j) => Timetable(
     id: j['id'] as String?,
     name: j['name'] as String? ?? 'Timetable',
+    kind: j['kind'] == 'routine' ? TimetableKind.routine : TimetableKind.school,
     institution: j['institution'] as String?,
     section: j['section'] as String?,
     validFrom: j['validFrom'] == null ? null : parseDateKey(j['validFrom'] as String),

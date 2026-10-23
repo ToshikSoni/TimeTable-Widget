@@ -11,6 +11,7 @@ class Occurrence {
     this.cancelled = false,
     this.extra = false,
     this.changeReason,
+    this.countsAttendance = true,
   });
 
   final DateTime date;
@@ -20,6 +21,9 @@ class Occurrence {
   final bool cancelled;
   final bool extra;
   final String? changeReason;
+
+  /// False for routine timetables, which don't track attendance.
+  final bool countsAttendance;
 
   DateTime get start => date.add(Duration(minutes: entry.start));
   DateTime get end => date.add(Duration(minutes: entry.end));
@@ -39,12 +43,13 @@ class Occurrence {
     return subject?.room;
   }
 
-  int get color => subject?.color ?? kActivityColor;
+  int get color => entry.color ?? subject?.color ?? kActivityColor;
 
   String get key => attendanceKey(date, entry.id);
 
   /// Whether this occurrence counts towards attendance.
-  bool get tracksAttendance => subject != null && entry.kind != ClassKind.activity && !cancelled;
+  bool get tracksAttendance =>
+      countsAttendance && subject != null && entry.kind != ClassKind.activity && !cancelled;
 
   bool isLiveAt(DateTime t) => !cancelled && !t.isBefore(start) && t.isBefore(end);
 
@@ -64,10 +69,16 @@ class DayPlan {
     this.special,
     this.effectiveWeekday,
     this.outOfRange = false,
+    this.carryOver = const [],
   });
 
   final DateTime date;
   final List<Occurrence> occurrences;
+
+  /// Yesterday's overnight entries that are still running into this day
+  /// (e.g. sleep from 23:30). Not part of [occurrences], so they aren't
+  /// counted or reminded twice.
+  final List<Occurrence> carryOver;
   final SpecialDay? special;
 
   /// The weekday whose timetable is followed (differs from [date] on
@@ -115,6 +126,21 @@ class ScheduleEngine {
   }
 
   static DayPlan dayPlan(Timetable tt, DateTime day) {
+    final plan = _plan(tt, day);
+    final previous = _plan(tt, DateTime(plan.date.year, plan.date.month, plan.date.day - 1));
+    final carry = previous.active.where((o) => o.entry.overnight).toList();
+    if (carry.isEmpty) return plan;
+    return DayPlan(
+      date: plan.date,
+      occurrences: plan.occurrences,
+      special: plan.special,
+      effectiveWeekday: plan.effectiveWeekday,
+      outOfRange: plan.outOfRange,
+      carryOver: carry,
+    );
+  }
+
+  static DayPlan _plan(Timetable tt, DateTime day) {
     final date = dateOnly(day);
     if ((tt.validFrom != null && date.isBefore(dateOnly(tt.validFrom!))) ||
         (tt.validUntil != null && date.isAfter(dateOnly(tt.validUntil!)))) {
@@ -136,6 +162,7 @@ class ScheduleEngine {
         if (c.type == ChangeType.cancel && c.entryId != null) c.entryId!: c,
     };
 
+    final school = tt.kind == TimetableKind.school;
     final result = <Occurrence>[
       for (final e in entriesFor(tt, weekday))
         Occurrence(
@@ -145,6 +172,7 @@ class ScheduleEngine {
           teacher: tt.teacher(e.teacherId) ?? tt.teacher(tt.subject(e.subjectId)?.teacherId),
           cancelled: cancelled.containsKey(e.id),
           changeReason: cancelled[e.id]?.reason,
+          countsAttendance: school,
         ),
       for (final c in changes)
         if (c.type == ChangeType.extra && c.extra != null && isVisible(tt, c.extra!))
@@ -157,6 +185,7 @@ class ScheduleEngine {
                 tt.teacher(tt.subject(c.extra!.subjectId)?.teacherId),
             extra: true,
             changeReason: c.reason,
+            countsAttendance: school,
           ),
     ]..sort((a, b) => _byTime(a.entry, b.entry));
 
@@ -174,24 +203,28 @@ class ScheduleEngine {
     var day = dateOnly(from);
     final last = dateOnly(to);
     while (!day.isAfter(last)) {
-      out.addAll(dayPlan(tt, day).active);
+      out.addAll(_plan(tt, day).active);
       day = DateTime(day.year, day.month, day.day + 1);
     }
     return out;
   }
 
   static Occurrence? current(Timetable tt, DateTime now) {
-    for (final o in dayPlan(tt, now).active) {
-      if (o.isLiveAt(now)) return o;
+    final plan = dayPlan(tt, now);
+    // When blocks overlap (e.g. "Work" with a meeting inside it), show the
+    // one that started most recently; ties keep timetable order.
+    Occurrence? best;
+    for (final o in [...plan.carryOver, ...plan.active]) {
+      if (o.isLiveAt(now) && (best == null || o.start.isAfter(best.start))) best = o;
     }
-    return null;
+    return best;
   }
 
   /// The next class starting after [now], looking up to [days] ahead.
   static Occurrence? next(Timetable tt, DateTime now, {int days = 14}) {
     var day = dateOnly(now);
     for (var i = 0; i <= days; i++) {
-      for (final o in dayPlan(tt, day).active) {
+      for (final o in _plan(tt, day).active) {
         if (o.start.isAfter(now)) return o;
       }
       day = DateTime(day.year, day.month, day.day + 1);
@@ -215,13 +248,25 @@ class ScheduleEngine {
 
   /// Groups occurrences that overlap in time into lanes for side-by-side
   /// rendering. Returns for each occurrence its lane index and lane count.
-  static Map<Occurrence, ({int lane, int lanes})> layoutLanes(List<Occurrence> items) {
-    final sorted = [...items]..sort((a, b) => _byTime(a.entry, b.entry));
-    final result = <Occurrence, ({int lane, int lanes})>{};
-    var cluster = <Occurrence>[];
+  static Map<Occurrence, ({int lane, int lanes})> layoutLanes(List<Occurrence> items) =>
+      layoutSegments(items, (o) => o.entry.start, (o) => o.entry.end);
+
+  /// Lane layout for arbitrary items with start/end minutes.
+  static Map<T, ({int lane, int lanes})> layoutSegments<T>(
+    List<T> items,
+    int Function(T) startOf,
+    int Function(T) endOf,
+  ) {
+    final sorted = [...items]
+      ..sort((a, b) {
+        final s = startOf(a).compareTo(startOf(b));
+        return s != 0 ? s : endOf(a).compareTo(endOf(b));
+      });
+    final result = <T, ({int lane, int lanes})>{};
+    var cluster = <T>[];
     var clusterEnd = -1;
     final laneEnds = <int>[];
-    final assigned = <Occurrence, int>{};
+    final assigned = <T, int>{};
 
     void flush() {
       final count = laneEnds.length;
@@ -233,20 +278,21 @@ class ScheduleEngine {
     }
 
     for (final o in sorted) {
-      if (cluster.isNotEmpty && o.entry.start >= clusterEnd) {
+      final start = startOf(o), end = endOf(o);
+      if (cluster.isNotEmpty && start >= clusterEnd) {
         flush();
         clusterEnd = -1;
       }
-      var lane = laneEnds.indexWhere((end) => end <= o.entry.start);
+      var lane = laneEnds.indexWhere((e) => e <= start);
       if (lane == -1) {
         lane = laneEnds.length;
-        laneEnds.add(o.entry.end);
+        laneEnds.add(end);
       } else {
-        laneEnds[lane] = o.entry.end;
+        laneEnds[lane] = end;
       }
       assigned[o] = lane;
       cluster.add(o);
-      if (o.entry.end > clusterEnd) clusterEnd = o.entry.end;
+      if (end > clusterEnd) clusterEnd = end;
     }
     if (cluster.isNotEmpty) flush();
     return result;

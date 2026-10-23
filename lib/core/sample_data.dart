@@ -214,3 +214,79 @@ List<Period> defaultPeriods() => [
   Period(label: 'Period 5', start: _t(14, 0), end: _t(15, 0)),
   Period(label: 'Period 6', start: _t(15, 0), end: _t(16, 0)),
 ];
+
+/// A made-up working week: the example for people using Cadence to plan their
+/// day rather than a school timetable.
+Timetable buildSampleRoutine() {
+  var seq = 0;
+  const weekdays = [1, 2, 3, 4, 5];
+  const everyDay = [1, 2, 3, 4, 5, 6, 7];
+  final entries = <ClassEntry>[];
+  void add(
+    List<int> days,
+    String title,
+    int start,
+    int end, {
+    required int color,
+    String? place,
+    String? note,
+    bool alarm = false,
+    bool quiet = false,
+    int? remind,
+  }) {
+    for (final d in days) {
+      entries.add(
+        ClassEntry(
+          id: 'r${++seq}',
+          weekday: d,
+          start: start,
+          end: end,
+          title: title,
+          room: place,
+          note: note,
+          kind: ClassKind.activity,
+          color: kRoutinePalette[color],
+          alarm: alarm,
+          doNotDisturb: quiet,
+          reminderMinutes: remind,
+        ),
+      );
+    }
+  }
+
+  const day = 24 * 60;
+  add(weekdays, 'Wake up & stretch', _t(6, 45), _t(7, 0), color: 3, alarm: true, remind: 0);
+  add([1, 3, 5], 'Workout', _t(7, 0), _t(7, 45), color: 4, place: 'Gym');
+  add([2, 4], 'Morning walk', _t(7, 0), _t(7, 30), color: 12);
+  add(weekdays, 'Breakfast', _t(8, 0), _t(8, 30), color: 8);
+  add(weekdays, 'Commute', _t(8, 45), _t(9, 30), color: 15, note: 'Podcast or audiobook');
+  add(weekdays, 'Deep work', _t(9, 30), _t(12, 30), color: 0, place: 'Office', quiet: true);
+  add(weekdays, 'Lunch', _t(12, 30), _t(13, 15), color: 8);
+  add(weekdays, 'Meetings & email', _t(13, 15), _t(15, 0), color: 6, place: 'Office');
+  add(weekdays, 'Focus block', _t(15, 0), _t(17, 30), color: 13, place: 'Office', quiet: true);
+  add(weekdays, 'Commute home', _t(17, 45), _t(18, 30), color: 15);
+  add(everyDay, 'Cook & dinner', _t(19, 0), _t(20, 0), color: 9);
+  add(
+    [1, 2, 3, 4],
+    'Learn something new',
+    _t(20, 30),
+    _t(21, 30),
+    color: 5,
+    note: 'Course, book or side project',
+  );
+  add([1, 2, 3, 4, 7], 'Wind down, no screens', _t(22, 30), _t(23, 0), color: 14);
+  add([1, 2, 3, 4, 7], 'Sleep', _t(23, 0), day + _t(6, 45), color: 11, quiet: true, remind: -1);
+  add([5, 6], 'Sleep', _t(23, 30), day + _t(8, 0), color: 11, quiet: true, remind: -1);
+  add([6], 'Long run', _t(8, 30), _t(9, 45), color: 4, place: 'Park');
+  add([6], 'Groceries & chores', _t(10, 30), _t(12, 0), color: 7);
+  add([7], 'Family & friends', _t(16, 0), _t(19, 0), color: 2);
+  add([7], 'Plan the week ahead', _t(20, 0), _t(20, 30), color: 1);
+
+  return Timetable(
+    id: 'sample-routine',
+    name: 'Workday routine (example)',
+    kind: TimetableKind.routine,
+    workingDays: everyDay,
+    entries: entries,
+  );
+}

@@ -1,0 +1,37 @@
+# Maintainer: Toshik Soni
+#
+# Packages the prebuilt Linux release. CI fills in pkgver and points
+# `source` at the tarball it just built; to build by hand, download
+# Cadence-<version>-linux-x64.tar.gz from the Releases page next to this file
+# and run `makepkg -si`.
+pkgname=cadence-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Timetable and daily planner with widgets, reminders and alarms'
+arch=('x86_64')
+url='https://github.com/ToshikSoni/TimeTable-Widget'
+license=('MIT')
+depends=('gtk3' 'gstreamer' 'gst-plugins-base' 'gst-plugins-good')
+provides=('cadence')
+conflicts=('cadence')
+options=('!strip' '!debug')
+source=("Cadence-${pkgver}-linux-x64.tar.gz"
+        'io.github.toshiksoni.cadence.desktop'
+        'io.github.toshiksoni.cadence.metainfo.xml'
+        'icon-256.png'
+        'LICENSE')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -d "$pkgdir/opt/cadence"
+  cp -a "Cadence-${pkgver}-linux-x64/." "$pkgdir/opt/cadence/"
+  install -d "$pkgdir/usr/bin"
+  ln -s /opt/cadence/cadence "$pkgdir/usr/bin/cadence"
+  install -Dm644 io.github.toshiksoni.cadence.desktop \
+    "$pkgdir/usr/share/applications/io.github.toshiksoni.cadence.desktop"
+  install -Dm644 io.github.toshiksoni.cadence.metainfo.xml \
+    "$pkgdir/usr/share/metainfo/io.github.toshiksoni.cadence.metainfo.xml"
+  install -Dm644 icon-256.png \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/io.github.toshiksoni.cadence.png"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

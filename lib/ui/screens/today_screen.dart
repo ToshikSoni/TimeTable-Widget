@@ -101,57 +101,60 @@ class TodayScreenState extends State<TodayScreen> {
     );
   }
 
-  void _showAddMenu(BuildContext context, DateTime date) => showModalBottomSheet(
-    useRootNavigator: true,
-    context: context,
-    constraints: const BoxConstraints(maxWidth: 520),
-    builder: (sheet) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _AddOption(
-              icon: Icons.repeat_rounded,
-              title: 'Weekly class',
-              subtitle: 'Repeats every ${weekdayName(date.weekday)}',
-              onTap: () {
-                Navigator.pop(sheet);
-                showEditor(context, EntryEditor(weekday: date.weekday));
-              },
-            ),
-            _AddOption(
-              icon: Icons.event_available_outlined,
-              title: 'Extra class',
-              subtitle: 'Only on ${DateFormat('EEEE, d MMM').format(date)}',
-              onTap: () {
-                Navigator.pop(sheet);
-                showEditor(context, EntryEditor(date: date));
-              },
-            ),
-            _AddOption(
-              icon: Icons.task_alt_rounded,
-              title: 'Task or exam',
-              subtitle: 'Assignment, test, reading…',
-              onTap: () {
-                Navigator.pop(sheet);
-                showEditor(context, const TaskEditor());
-              },
-            ),
-            _AddOption(
-              icon: Icons.beach_access_outlined,
-              title: 'Holiday or special day',
-              subtitle: 'Day off, or follow another day’s timetable',
-              onTap: () {
-                Navigator.pop(sheet);
-                showEditor(context, SpecialDayEditor(date: date));
-              },
-            ),
-          ],
+  void _showAddMenu(BuildContext context, DateTime date) {
+    final noun = context.readStore.timetable?.kind.item ?? 'class';
+    showModalBottomSheet(
+      useRootNavigator: true,
+      context: context,
+      constraints: const BoxConstraints(maxWidth: 520),
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _AddOption(
+                icon: Icons.repeat_rounded,
+                title: 'Weekly $noun',
+                subtitle: 'Repeats every ${weekdayName(date.weekday)}',
+                onTap: () {
+                  Navigator.pop(sheet);
+                  showEditor(context, EntryEditor(weekday: date.weekday));
+                },
+              ),
+              _AddOption(
+                icon: Icons.event_available_outlined,
+                title: 'Extra $noun',
+                subtitle: 'Only on ${DateFormat('EEEE, d MMM').format(date)}',
+                onTap: () {
+                  Navigator.pop(sheet);
+                  showEditor(context, EntryEditor(date: date));
+                },
+              ),
+              _AddOption(
+                icon: Icons.task_alt_rounded,
+                title: 'Task or exam',
+                subtitle: 'Assignment, test, reading…',
+                onTap: () {
+                  Navigator.pop(sheet);
+                  showEditor(context, const TaskEditor());
+                },
+              ),
+              _AddOption(
+                icon: Icons.beach_access_outlined,
+                title: 'Holiday or special day',
+                subtitle: 'Day off, or follow another day’s timetable',
+                onTap: () {
+                  Navigator.pop(sheet);
+                  showEditor(context, SpecialDayEditor(date: date));
+                },
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _AddOption extends StatelessWidget {
@@ -381,7 +384,7 @@ class _DayBody extends StatelessWidget {
       children.add(const SizedBox(height: 8));
     }
 
-    final occ = plan.occurrences;
+    final occ = [...plan.carryOver, ...plan.occurrences];
     if (occ.isEmpty) {
       final next = ScheduleEngine.next(
         timetable,
@@ -392,7 +395,7 @@ class _DayBody extends StatelessWidget {
           padding: const EdgeInsets.only(top: 24),
           child: EmptyState(
             illustration: const Illustration(Art.freeDay),
-            title: plan.isHoliday ? 'Holiday — enjoy it' : 'No classes',
+            title: plan.isHoliday ? 'Holiday — enjoy it' : 'Nothing scheduled',
             message: next == null
                 ? 'Nothing else is scheduled yet.'
                 : 'Next up: ${next.shortTitle}, ${relativeDay(next.start, plan.date).toLowerCase()} at ${context.timeFormat.time(next.start)}',
@@ -409,8 +412,9 @@ class _DayBody extends StatelessWidget {
     } else {
       final active = plan.active;
       final summary = active.isEmpty
-          ? 'All classes cancelled'
-          : '${active.length} ${active.length == 1 ? 'class' : 'classes'} · ${context.timeFormat.time(plan.firstStart!)} – ${context.timeFormat.time(plan.lastEnd!)}';
+          ? 'Everything cancelled'
+          : '${timetable.kind.count(active.length)} · ${context.timeFormat.time(plan.firstStart!)} – '
+                '${context.timeFormat.time(plan.lastEnd!)}${dateOnly(plan.lastEnd!) != plan.date ? ' (+1)' : ''}';
       children.add(
         SectionHeader(
           'Schedule',
@@ -490,7 +494,7 @@ class _DayBody extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 10),
           child: Entrance(
             index: index++,
-            child: ClassTile(occurrence: o, now: now),
+            child: ClassTile(occurrence: o, now: now, carried: o.date != plan.date),
           ),
         ),
       );
@@ -514,7 +518,7 @@ class _Banner extends StatelessWidget {
             'Adjust the dates in Settings → Timetable if this is wrong.',
           )
         : plan.isHoliday
-        ? (Icons.beach_access_outlined, 'Holiday', plan.special!.label ?? 'No classes today')
+        ? (Icons.beach_access_outlined, 'Holiday', plan.special!.label ?? 'Day off')
         : plan.followsOtherDay
         ? (
             Icons.swap_horiz_rounded,

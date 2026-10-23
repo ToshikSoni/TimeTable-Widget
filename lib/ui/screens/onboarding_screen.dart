@@ -13,7 +13,7 @@ import '../widgets/common.dart';
 import '../widgets/illustrations.dart';
 import 'settings/data_actions.dart';
 
-enum _Source { example, blank, imported }
+enum _Source { schoolExample, routineExample, blankSchool, blankRoutine, imported }
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -26,6 +26,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pages = PageController();
   int _page = 0;
   _Source? _source;
+  String? _createdId;
   bool _autostart = true;
 
   bool get _desktop => DesktopShell.supported;
@@ -62,21 +63,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _next();
       return;
     }
+    // Going back and picking something else replaces what was added before.
+    if (_createdId != null) {
+      store.removeTimetable(_createdId!);
+      _createdId = null;
+    }
+    Timetable? created;
     switch (source) {
-      case _Source.example:
-        if (!store.data.timetables.any((t) => t.id == 'sample-cse-a')) {
-          store.addTimetable(buildSampleTimetable());
-        } else {
-          store.setActive('sample-cse-a');
-        }
-      case _Source.blank:
-        // Going back and switching from the example replaces it.
-        if (_source == _Source.example) store.removeTimetable('sample-cse-a');
-        store.addTimetable(Timetable(name: 'My timetable', periods: defaultPeriods()));
+      case _Source.schoolExample:
+        created = buildSampleTimetable();
+      case _Source.routineExample:
+        created = buildSampleRoutine();
+      case _Source.blankSchool:
+        created = Timetable(name: 'My timetable', periods: defaultPeriods());
+      case _Source.blankRoutine:
+        created = Timetable(
+          name: 'My routine',
+          kind: TimetableKind.routine,
+          workingDays: [1, 2, 3, 4, 5, 6, 7],
+        );
       case _Source.imported:
         final before = store.data.timetables.length;
         await DataActions.importFile(context);
         if (!mounted || store.data.timetables.length == before) return;
+    }
+    if (created != null) {
+      store.addTimetable(created);
+      _createdId = created.id;
     }
     setState(() => _source = source);
     _next();
@@ -174,8 +187,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _welcome(BuildContext context) => _frame(
     art: const Illustration(Art.calendar),
-    title: 'Your timetable,\nalways a glance away',
-    body: 'Cadence keeps your classes on your home screen and desktop, reminds you before each one, and never needs an account.',
+    title: 'Your day,\nalways a glance away',
+    body:
+        'Cadence keeps your class timetable or daily routine on your home screen and desktop, '
+        'reminds you before each thing, and never needs an account.',
     children: const [
       _Feature(
         Icons.widgets_outlined,
@@ -185,12 +200,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _Feature(
         Icons.notifications_active_outlined,
         'Reminders & alarms',
-        'A heads-up before class and a wake-up alarm before the first one.',
+        'A heads-up before each class or activity, alarms when you need them, and Do Not Disturb while you focus.',
       ),
       _Feature(
         Icons.groups_2_outlined,
-        'Built for real timetables',
-        'Lab groups, electives, holidays and “Saturday follows Monday”.',
+        'For college and for work',
+        'Lab groups, electives and holidays for students; overnight blocks and focus time for everyday routines.',
       ),
       _Feature(
         Icons.insights_outlined,
@@ -203,27 +218,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _sourcePage(BuildContext context) => _frame(
     art: const Illustration(Art.widget),
-    title: 'Set up your timetable',
-    body: 'You can change everything later.',
+    title: 'What will you plan?',
+    body: 'Pick a starting point — you can add more timetables and change everything later.',
     children: [
       _OptionCard(
-        icon: Icons.auto_awesome_outlined,
-        title: 'Use the example',
-        subtitle: 'B.Tech CSE (Cyber Security), Semester VI · CSE-A. Great for a quick tour — or if it’s yours!',
-        selected: _source == _Source.example,
-        onTap: () => _choose(_Source.example),
+        icon: Icons.school_outlined,
+        title: 'My classes',
+        subtitle: 'An empty week with a typical bell schedule.',
+        selected: _source == _Source.blankSchool,
+        onTap: () => _choose(_Source.blankSchool),
       ),
       _OptionCard(
-        icon: Icons.edit_calendar_outlined,
-        title: 'Start fresh',
-        subtitle: 'Begin with an empty week and a typical bell schedule.',
-        selected: _source == _Source.blank,
-        onTap: () => _choose(_Source.blank),
+        icon: Icons.work_outline_rounded,
+        title: 'My work & daily routine',
+        subtitle: 'Work hours, gym, study blocks, sleep — any day plan.',
+        selected: _source == _Source.blankRoutine,
+        onTap: () => _choose(_Source.blankRoutine),
+      ),
+      _OptionCard(
+        icon: Icons.auto_awesome_outlined,
+        title: 'Explore an example',
+        subtitle: 'B.Tech CSE (Cyber Security), Semester VI · CSE-A.',
+        selected: _source == _Source.schoolExample,
+        onTap: () => _choose(_Source.schoolExample),
+      ),
+      _OptionCard(
+        icon: Icons.wb_twilight_rounded,
+        title: 'Explore an example routine',
+        subtitle: 'A typical working week with focus time and sleep.',
+        selected: _source == _Source.routineExample,
+        onTap: () => _choose(_Source.routineExample),
       ),
       _OptionCard(
         icon: Icons.file_open_outlined,
         title: 'Import a file',
-        subtitle: 'A timetable a classmate shared with you, or a Cadence backup.',
+        subtitle: 'Shared by a classmate, a Cadence backup, or a .tta file from TimeTable.',
         selected: _source == _Source.imported,
         onTap: () => _choose(_Source.imported),
       ),
@@ -234,6 +263,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final tt = context.store.timetable;
     final hasGroups = tt != null && tt.groups.isNotEmpty;
     final hasSubjects = tt != null && tt.subjects.isNotEmpty;
+    if (tt?.kind == TimetableKind.routine) {
+      return _frame(
+        art: const Illustration(Art.chart),
+        title: 'Make it yours',
+        body: tt!.entries.isEmpty
+            ? 'Add your activities from the Week tab. Times that run past midnight — like sleep — just work.'
+            : 'Edit activities from the Week tab whenever you like.',
+        children: const [
+          _Feature(
+            Icons.notifications_outlined,
+            'Per-activity alerts',
+            'Tap any activity to choose its reminder, make it ring as an alarm, or silence your phone while it runs.',
+          ),
+          _Feature(
+            Icons.beach_access_outlined,
+            'Days off',
+            'Mark holidays and leave in Settings so your routine stays quiet.',
+          ),
+        ],
+        action: FilledButton(onPressed: _next, child: const Text('Continue')),
+      );
+    }
     return _frame(
       art: const Illustration(Art.chart),
       title: 'Make it yours',
@@ -289,19 +340,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _reminders(BuildContext context) {
     final store = context.store;
+    final noun = store.timetable?.kind.item ?? 'class';
     final s = store.settings;
     return _frame(
       art: const Illustration(Art.bell),
-      title: 'Never miss a class',
+      title: 'Never miss what’s next',
       body: _desktop
-          ? 'Cadence lives in your system tray and taps you on the shoulder before each class.'
-          : 'Allow notifications so Cadence can remind you before each class — even when the app is closed.',
+          ? 'Cadence lives in your system tray and taps you on the shoulder before each $noun.'
+          : 'Allow notifications so Cadence can remind you before each $noun — even when the app is closed.',
       children: [
         Card(
           child: Column(
             children: [
               SwitchListTile(
-                title: const Text('Remind me 10 minutes before class'),
+                title: Text('Remind me 10 minutes before each $noun'),
                 value: s.remindersEnabled,
                 onChanged: (v) => store.updateSettings((s) => s.remindersEnabled = v),
               ),
@@ -311,7 +363,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onChanged: (v) => store.updateSettings((s) => s.dailySummary = v),
               ),
               SwitchListTile(
-                title: const Text('Wake-up alarm before the first class'),
+                title: Text('Wake-up alarm before the first $noun'),
                 subtitle: const Text('One hour before — adjustable in Settings'),
                 value: s.morningAlarm,
                 onChanged: (v) => store.updateSettings((s) => s.morningAlarm = v),

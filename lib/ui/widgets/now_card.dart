@@ -228,7 +228,7 @@ class _NextCard extends StatelessWidget {
     final sameDay = dateOnly(o.start) == dateOnly(now);
     final when = sameDay
         ? 'UP NEXT · IN ${humanDuration(until).toUpperCase()}'
-        : 'NEXT CLASS · ${relativeDay(o.start, now).toUpperCase()}';
+        : 'NEXT UP · ${relativeDay(o.start, now).toUpperCase()}';
     final meta = [fmt.rangeOf(o.start, o.end), if (o.room != null) o.room!].join(' · ');
     return _Shell(
       color: Color(o.color),
@@ -312,7 +312,7 @@ class _IdleCard extends StatelessWidget {
             children: [
               Text('Nothing scheduled', style: context.text.titleLarge?.copyWith(color: _onCard)),
               Text(
-                'No classes in the next two weeks.',
+                'Nothing in the next two weeks.',
                 style: context.text.bodyMedium?.copyWith(color: _onCardMuted),
               ),
             ],

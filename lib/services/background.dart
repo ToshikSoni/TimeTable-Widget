@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../core/store.dart';
+import 'dnd.dart';
 import 'home_widget_sync.dart';
 import 'notifications.dart';
 
@@ -42,6 +43,7 @@ void backgroundDispatcher() {
       await NotificationService.instance.init();
       await NotificationService.instance.reschedule(store.data, use24h: use24h);
       await HomeWidgetSync.push(store.data, use24h: use24h);
+      await DndService.sync(store.data);
       return true;
     } catch (e) {
       debugPrint('Background refresh failed: $e');

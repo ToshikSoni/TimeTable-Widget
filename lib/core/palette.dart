@@ -27,3 +27,12 @@ const kAccentChoices = <int>[
 ];
 
 const kBrandColor = 0xFF5B5BD6;
+
+/// A wider set for routines, where every activity gets its own colour.
+const kRoutinePalette = <int>[
+  ...kSubjectPalette,
+  0xFF46A758, // green
+  0xFF3E63DD, // indigo
+  0xFFAB4ABA, // plum
+  0xFF5F6B7A, // slate
+];

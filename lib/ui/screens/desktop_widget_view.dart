@@ -85,7 +85,7 @@ class DesktopWidgetView extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(12),
           child: Text(
-            plan.isHoliday ? 'Holiday today' : 'No classes today',
+            plan.isHoliday ? 'Holiday today' : 'Nothing scheduled today',
             textAlign: TextAlign.center,
             style: context.text.bodyMedium?.copyWith(color: context.colors.onSurfaceVariant),
           ),

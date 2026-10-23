@@ -427,6 +427,7 @@ class _TimetableDetailsEditorState extends State<TimetableDetailsEditor> {
   late DateTime? _from = widget.timetable.validFrom;
   late DateTime? _until = widget.timetable.validUntil;
   late final Set<int> _days = {...widget.timetable.workingDays};
+  late TimetableKind _kind = widget.timetable.kind;
 
   @override
   void dispose() {
@@ -452,7 +453,8 @@ class _TimetableDetailsEditorState extends State<TimetableDetailsEditor> {
         ..section = _section.text.trim().isEmpty ? null : _section.text.trim()
         ..validFrom = _from
         ..validUntil = _until
-        ..workingDays = (_days.toList()..sort());
+        ..workingDays = (_days.toList()..sort())
+        ..kind = _kind;
     }
 
     if (widget.isNew) {
@@ -474,24 +476,50 @@ class _TimetableDetailsEditorState extends State<TimetableDetailsEditor> {
         controller: _name,
         autofocus: widget.isNew,
         textCapitalization: TextCapitalization.sentences,
-        decoration: const InputDecoration(labelText: 'Name', hintText: 'e.g. Semester 6'),
-      ),
-      TextField(
-        controller: _inst,
-        textCapitalization: TextCapitalization.words,
-        decoration: const InputDecoration(
-          labelText: 'School / university',
-          prefixIcon: Icon(Icons.account_balance_outlined),
+        decoration: InputDecoration(
+          labelText: 'Name',
+          hintText: _kind == TimetableKind.school ? 'e.g. Semester 6' : 'e.g. My week',
         ),
       ),
-      TextField(
-        controller: _section,
-        decoration: const InputDecoration(
-          labelText: 'Class / section',
-          prefixIcon: Icon(Icons.groups_outlined),
-        ),
+      const FieldLabel('What is it for?'),
+      SegmentedButton<TimetableKind>(
+        showSelectedIcon: false,
+        segments: const [
+          ButtonSegment(
+            value: TimetableKind.school,
+            icon: Icon(Icons.school_outlined),
+            label: Text('School / college'),
+          ),
+          ButtonSegment(
+            value: TimetableKind.routine,
+            icon: Icon(Icons.work_outline_rounded),
+            label: Text('Work & daily routine'),
+          ),
+        ],
+        selected: {_kind},
+        onSelectionChanged: (v) => setState(() {
+          _kind = v.first;
+          if (_kind == TimetableKind.routine && widget.isNew) _days.addAll([6, 7]);
+        }),
       ),
-      const FieldLabel('Working days'),
+      if (_kind == TimetableKind.school)
+        TextField(
+          controller: _inst,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'School / university',
+            prefixIcon: Icon(Icons.account_balance_outlined),
+          ),
+        ),
+      if (_kind == TimetableKind.school)
+        TextField(
+          controller: _section,
+          decoration: const InputDecoration(
+            labelText: 'Class / section',
+            prefixIcon: Icon(Icons.groups_outlined),
+          ),
+        ),
+      FieldLabel(_kind == TimetableKind.school ? 'Working days' : 'Days shown in the week view'),
       Wrap(
         spacing: 6,
         runSpacing: 6,

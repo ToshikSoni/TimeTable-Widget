@@ -4,27 +4,35 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Versions below 1.0 are previews: things may still change between releases.
+
 ## [Unreleased]
 
-## [1.0.0] - 2026-10-22
+## [0.1.0] - 2026-10-23
 
-First public release.
+First public preview.
 
 ### Added
 
-- Today view with a live “happening now” card, countdown, up next, free periods and breaks.
-- Week grid with lunch bands, a “now” line, side-by-side parallel classes and an agenda view.
-- Android home-screen widgets: *Up next* and *Today*, both resizable, light and dark.
-- Desktop widget for Windows and Linux: always on top, pinned to the desktop, or a normal window; adjustable opacity; remembers its position.
-- System tray with the next class in the tooltip; close-to-tray; start at sign-in (Windows and Linux).
-- Class reminders with per-subject lead time, an optional start-time notification, a morning summary and a full-screen wake-up alarm with snooze.
-- Lab groups / batches, electives, holidays, special days that follow another weekday's timetable, one-off cancellations and extra classes.
-- Bell schedule with periods and breaks; quick period chips when adding classes.
-- Attendance tracker with a configurable target and “can skip / must attend” advice.
+- **Today** view with a live “happening now” card, countdown, up next, free time and breaks.
+- **Week** grid with lunch bands, a “now” line, side-by-side parallel entries and an agenda view.
+- **Daily routines** alongside class timetables: plan work, gym, study blocks and sleep, with
+  entries that run past midnight, a colour per activity, and an example working-week routine.
+- **Per-entry alerts**: choose the reminder lead time, make an entry ring as a full-screen alarm,
+  or silence the phone (Android Do Not Disturb) while it runs.
+- **Widgets**: *Up next* and *Today* home-screen widgets on Android; a desktop widget on Windows
+  and Linux that can stay on top or sit on the desktop.
+- System tray, close-to-tray and start at sign-in on Windows and Linux.
+- Class reminders, a morning summary and a wake-up alarm with snooze.
+- Lab groups, electives, holidays, days that follow another weekday's timetable, one-off
+  cancellations and extra classes, and a bell schedule.
+- Attendance tracker with “can skip / must attend” advice (class timetables).
 - Tasks and exams with due-date reminders.
-- Multiple timetables, sharing a timetable as a file, full backup and restore, `.ics` calendar export and saving the week as an image.
+- Multiple timetables, sharing a timetable as a file, backup and restore, `.ics` calendar export,
+  saving the week as an image, and importing `.tta` backups from the TimeTable Android app.
 - Light, dark and system themes, accent colours, Material You on Android 12+, 12/24-hour clock.
-- Guided first-run setup, with the B.Tech CSE (Cyber Security) Semester VI timetable as an example.
+- Downloads for Windows (installer and portable), Android (APKs), Debian/Ubuntu (`.deb`),
+  Fedora/openSUSE (`.rpm`), Arch Linux (`.pkg.tar.zst`), AppImage and a plain tarball.
 
-[Unreleased]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/ToshikSoni/TimeTable-Widget/releases/tag/v1.0.0
+[Unreleased]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ToshikSoni/TimeTable-Widget/releases/tag/v0.1.0

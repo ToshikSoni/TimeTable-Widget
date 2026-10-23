@@ -9,6 +9,7 @@ import '../../../core/formatting.dart';
 import '../../../core/models.dart';
 import '../../../core/palette.dart';
 import '../../../services/desktop.dart';
+import '../../../services/dnd.dart';
 import '../../../services/home_widget_sync.dart';
 import '../../../services/notifications.dart';
 import '../../app_scope.dart';
@@ -31,6 +32,8 @@ class SettingsScreen extends StatelessWidget {
     final store = context.store;
     final s = store.settings;
     final tt = store.timetable;
+    final noun = tt?.kind.item ?? 'class';
+    final nouns = tt?.kind.items ?? 'classes';
     void set(void Function(Settings s) f) => store.updateSettings(f);
     void push(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
@@ -61,9 +64,11 @@ class SettingsScreen extends StatelessWidget {
                   _NavTile(
                     Icons.info_outline_rounded,
                     'Details & dates',
-                    'Name, working days, term dates',
+                    'Name, type, working days, dates',
                     () => showEditor(context, TimetableDetailsEditor(timetable: tt)),
                   ),
+                ],
+                if (tt != null && tt.kind == TimetableKind.school) ...[
                   _NavTile(
                     Icons.menu_book_outlined,
                     'Subjects',
@@ -88,9 +93,13 @@ class SettingsScreen extends StatelessWidget {
                     tt.myGroup == null ? 'Showing all groups' : 'You’re in ${tt.myGroup}',
                     () => push(const GroupsPage()),
                   ),
+                ],
+                if (tt != null) ...[
                   _NavTile(
                     Icons.beach_access_outlined,
-                    'Holidays & special days',
+                    tt.kind == TimetableKind.school
+                        ? 'Holidays & special days'
+                        : 'Days off & special days',
                     '${tt.specialDays.length} marked',
                     () => push(const SpecialDaysPage()),
                   ),
@@ -106,7 +115,7 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 SwitchListTile(
                   secondary: const Icon(Icons.notifications_active_outlined),
-                  title: const Text('Class reminders'),
+                  title: const Text('Reminders'),
                   subtitle: Text(s.remindersEnabled ? leadTimeLabel(s.reminderMinutes) : 'Off'),
                   value: s.remindersEnabled,
                   onChanged: (v) async {
@@ -125,7 +134,9 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   SwitchListTile(
                     secondary: const Icon(Icons.play_circle_outline_rounded),
-                    title: const Text('Also notify when class starts'),
+                    title: Text(
+                      'Also notify when ${noun == 'class' ? 'a class' : 'an activity'} starts',
+                    ),
                     value: s.notifyAtStart,
                     onChanged: (v) => set((s) => s.notifyAtStart = v),
                   ),
@@ -135,7 +146,7 @@ class SettingsScreen extends StatelessWidget {
                   title: const Text('Morning summary'),
                   subtitle: Text(
                     s.dailySummary
-                        ? 'At ${context.timeFormat.minutes(s.dailySummaryAt)} on days with classes'
+                        ? 'At ${context.timeFormat.minutes(s.dailySummaryAt)} on days with $nouns'
                         : 'Off',
                   ),
                   value: s.dailySummary,
@@ -166,8 +177,8 @@ class SettingsScreen extends StatelessWidget {
                   subtitle: Text(
                     s.morningAlarm
                         ? leadTimeLabel(s.morningAlarmLead)
-                              .replaceAll('before', 'before your first class')
-                        : 'Rings before the first class of the day',
+                              .replaceAll('before', 'before your first $noun')
+                        : 'Rings before the first $noun of the day',
                   ),
                   value: s.morningAlarm,
                   onChanged: (v) async {
@@ -184,7 +195,7 @@ class SettingsScreen extends StatelessWidget {
                     title: 'Alarm time',
                     value: s.morningAlarmLead,
                     options: const [30, 45, 60, 75, 90, 120, 150, 180],
-                    label: (m) => leadTimeLabel(m).replaceAll('before', 'before first class'),
+                    label: (m) => leadTimeLabel(m).replaceAll('before', 'before first $noun'),
                     onChanged: (v) => set((s) => s.morningAlarmLead = v),
                   ),
                 SwitchListTile(
@@ -217,6 +228,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 if (_android) const _ExactAlarmTile(),
+                if (_android) const _DndTile(),
               ],
             ),
           ),
@@ -515,6 +527,63 @@ class _ExactAlarmTileState extends State<_ExactAlarmTile> with WidgetsBindingObs
         },
         child: const Text('Allow'),
       ),
+    );
+  }
+}
+
+class _DndTile extends StatefulWidget {
+  const _DndTile();
+
+  @override
+  State<_DndTile> createState() => _DndTileState();
+}
+
+class _DndTileState extends State<_DndTile> with WidgetsBindingObserver {
+  bool? _granted;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _check();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _check();
+  }
+
+  Future<void> _check() async {
+    final v = await DndService.hasAccess();
+    if (mounted) setState(() => _granted = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final used = context.store.timetable?.entries.any((e) => e.doNotDisturb) ?? false;
+    final granted = _granted ?? true;
+    return ListTile(
+      leading: Icon(
+        Icons.do_not_disturb_on_outlined,
+        color: used && !granted ? context.colors.error : null,
+      ),
+      title: const Text('Do Not Disturb'),
+      subtitle: Text(
+        granted
+            ? 'Allowed — entries marked “Do not disturb” silence your phone while they run'
+            : used
+            ? 'Some entries ask for silence, but Cadence isn’t allowed to change Do Not Disturb'
+            : 'Let entries you choose silence your phone while they run',
+      ),
+      trailing: granted
+          ? null
+          : const FilledButton.tonal(onPressed: DndService.requestAccess, child: Text('Allow')),
     );
   }
 }

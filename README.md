@@ -4,14 +4,16 @@
 
 # Cadence
 
-**Your class timetable, always a glance away.**
+**Your timetable and daily routine, always a glance away.**
 
-A free, open-source timetable app for **Windows, Linux and Android** with home-screen and desktop widgets, class reminders, a wake-up alarm, attendance tracking and tasks — built for real college timetables with lab groups, electives and “Saturday follows Monday” days.
+A free, open-source planner for **Windows, Linux and Android** with home-screen and desktop widgets, reminders, alarms and focus time — built for real college timetables (lab groups, electives, “Saturday follows Monday”) and just as happy running your working week.
 
 [![CI](https://github.com/ToshikSoni/TimeTable-Widget/actions/workflows/ci.yml/badge.svg)](https://github.com/ToshikSoni/TimeTable-Widget/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/ToshikSoni/TimeTable-Widget?sort=semver)](https://github.com/ToshikSoni/TimeTable-Widget/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-5B5BD6.svg)](LICENSE)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%C2%B7%20Linux%20%C2%B7%20Android-0EA5A4)
+
+> **Early preview (0.x).** Cadence is usable day to day, but features and file formats may still change before 1.0.
 
 [**Download**](#download) · [Features](#features) · [User guide](docs/USER_GUIDE.md) · [Contributing](CONTRIBUTING.md)
 
@@ -21,7 +23,9 @@ A free, open-source timetable app for **Windows, Linux and Android** with home-s
 
 ## Why Cadence?
 
-Most timetable apps assume every week looks the same and every student attends every class. Real timetables don't work like that: labs are split into batches, you pick one of two electives, a festival cancels Tuesday, and three Saturdays a semester “follow Monday's timetable”. Cadence understands all of that, then gets out of your way — the next class is always on your home screen, your desktop and in a notification ten minutes before it starts.
+Most timetable apps assume every week looks the same and every student attends every class. Real timetables don't work like that: labs are split into batches, you pick one of two electives, a festival cancels Tuesday, and three Saturdays a semester “follow Monday's timetable”. Cadence understands all of that.
+
+It works just as well outside college. Plan your working week — deep work, meetings, gym, commute, sleep — with blocks that cross midnight, an alarm on the ones that matter, and Do Not Disturb while you focus. Either way, what's next is always on your home screen, your desktop and in a notification before it starts.
 
 No account, no ads, no tracking. Your data stays on your device as a single JSON file you can back up or share.
 
@@ -32,8 +36,14 @@ No account, no ads, no tracking. Your data stays on your device as a single JSON
 - **Week** grid that looks like the printed timetable — with lunch bands, a moving “now” line, parallel classes side by side, and an agenda view for small screens.
 - **Widgets everywhere** — two resizable home-screen widgets on Android (*Up next* and *Today*), and a compact desktop widget on Windows and Linux that can float on top or sit on the desktop behind your windows.
 
-**Never miss a class**
-- Reminders a few minutes before each class (per-subject override or opt-out), plus an optional “class is starting” ping.
+**Plan your day, not just your classes**
+- **Routines** for work and life: give every activity its own colour, place and note.
+- Blocks that **run past midnight** — sleep from 23:30 to 07:00 just works, and shows up “since yesterday” the next morning.
+- **Per-activity alerts**: pick the reminder time, make it **ring as an alarm**, or **silence your phone** (Do Not Disturb, Android) while it runs.
+- Coming from the *TimeTable* Android app? Import its `.tta` backup directly.
+
+**Never miss a thing**
+- Reminders a few minutes before each class or activity (per-subject / per-entry override or opt-out), plus an optional “starting now” ping.
 - **Wake-up alarm** before your first class of the day, full-screen with snooze — it skips holidays and days without classes automatically.
 - A morning summary: “5 classes today, 09:30 – 17:30, first up: Cloud Security in BYOD Lab”.
 - **Starts with Windows / your Linux session** and lives in the system tray, so reminders keep coming.
@@ -57,6 +67,10 @@ No account, no ads, no tracking. Your data stays on your device as a single JSON
 
 ## Screenshots
 
+| Daily routine (desktop) | Routine on a phone, early morning |
+| --- | --- |
+| <img src="docs/screenshots/desktop-routine.png" alt="A working-day routine with deep work happening now" width="480"> | <img src="docs/screenshots/phone-routine.png" alt="Sleep carried over from the previous night" width="200"> |
+
 | Week | Attendance | Tasks |
 | --- | --- | --- |
 | <img src="docs/screenshots/desktop-week.png" alt="Week grid" width="300"> | <img src="docs/screenshots/desktop-attendance.png" alt="Attendance" width="300"> | <img src="docs/screenshots/desktop-tasks.png" alt="Tasks" width="300"> |
@@ -69,15 +83,17 @@ No account, no ads, no tracking. Your data stays on your device as a single JSON
 
 Grab the latest version from the [**Releases page**](https://github.com/ToshikSoni/TimeTable-Widget/releases/latest).
 
-| Platform | File | Notes |
+| Platform | File | How to install |
 | --- | --- | --- |
-| **Windows 10/11** | `Cadence-x.y.z-windows-x64-setup.exe` | Recommended. Installs per-user, no admin needed. |
+| **Windows 10/11** | `Cadence-x.y.z-windows-x64-setup.exe` | Run it. Installs per-user, no admin needed. |
 | | `Cadence-x.y.z-windows-x64-portable.zip` | Unzip anywhere and run `cadence.exe`. |
 | **Android 7+** | `Cadence-x.y.z-android-arm64-v8a.apk` | Most phones from the last few years. |
 | | `Cadence-x.y.z-android-universal.apk` | Works on every device if unsure. |
-| **Ubuntu / Debian** | `cadence_x.y.z_amd64.deb` | `sudo apt install ./cadence_x.y.z_amd64.deb` |
-| **Any Linux** | `Cadence-x.y.z-x86_64.AppImage` | `chmod +x` it and double-click. |
-| | `Cadence-x.y.z-linux-x64.tar.gz` | Plain bundle; run `./cadence`. |
+| **Ubuntu, Debian, Linux Mint, Pop!_OS, elementary** | `cadence_x.y.z_amd64.deb` | `sudo apt install ./cadence_x.y.z_amd64.deb` |
+| **Fedora, RHEL / Alma / Rocky, openSUSE** | `cadence-x.y.z-1.x86_64.rpm` | `sudo dnf install ./cadence-x.y.z-1.x86_64.rpm` (openSUSE: `sudo zypper install ./…rpm`) |
+| **Arch, Manjaro, EndeavourOS** | `cadence-bin-x.y.z-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./cadence-bin-x.y.z-1-x86_64.pkg.tar.zst` |
+| **Any other Linux** | `Cadence-x.y.z-x86_64.AppImage` | `chmod +x` it and double-click. |
+| | `Cadence-x.y.z-linux-x64.tar.gz` | Plain bundle; extract and run `./cadence`. |
 
 `SHA256SUMS.txt` is attached to every release if you want to verify your download.
 
@@ -87,8 +103,8 @@ Grab the latest version from the [**Releases page**](https://github.com/ToshikSo
 
 ## Getting started
 
-1. Open Cadence. Choose **Use the example** to explore, **Start fresh**, or **Import a file** a classmate shared.
-2. Pick your **lab group** and switch off **electives** you don't take.
+1. Open Cadence and pick what you want to plan: **My classes**, **My work & daily routine**, one of the examples, or **Import a file**.
+2. For classes, pick your **lab group** and switch off **electives** you don't take. For routines, tap any activity to set its reminder, alarm or Do Not Disturb.
 3. Allow notifications. On the desktop, leave **Start with Windows** on so reminders work after a restart.
 4. Add the widget: on Android long-press the home screen → *Widgets* → *Cadence*; on the desktop press **Desktop widget** in the sidebar (or the tray menu).
 
@@ -118,6 +134,8 @@ Linux additionally needs `libgtk-3-dev libx11-dev libxi-dev libgstreamer1.0-dev 
 ## Privacy
 
 Cadence works fully offline. It has no analytics, no ads and no servers. Everything is stored in one file on your device (`cadence.json` in the app's data folder) and only leaves it when *you* export or share it.
+
+See the full [privacy policy](PRIVACY.md).
 
 ## Contributing
 

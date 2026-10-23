@@ -36,7 +36,8 @@ class HomeWidgetSync {
       var day = dateOnly(now);
       for (var i = 0; i < days; i++) {
         final plan = ScheduleEngine.dayPlan(tt, day);
-        for (final o in plan.active) {
+        // Include last night's overnight entries (e.g. sleep) on the first day.
+        for (final o in [if (i == 0) ...plan.carryOver, ...plan.active]) {
           events.add({
             's': o.start.millisecondsSinceEpoch,
             'e': o.end.millisecondsSinceEpoch,
