@@ -146,7 +146,7 @@ class ClassTile extends StatelessWidget {
                   letterSpacing: 0.4,
                 ),
               ),
-            if (o.countsAttendance && o.entry.kind != ClassKind.lecture)
+            if (o.entry.kind != ClassKind.lecture && o.entry.kind != ClassKind.activity)
               Tag(o.entry.kind.label.toUpperCase(), color: tone.accent, dense: true),
             if (o.entry.group != null) Tag(o.entry.group!, color: tone.accent, dense: true),
             if (o.extra) Tag('EXTRA', color: context.colors.tertiary, dense: true),
@@ -371,7 +371,7 @@ class _ClassDetails extends StatelessWidget {
                       onPressed: () => launchUrl(Uri(scheme: 'mailto', path: o.teacher!.email)),
                     ),
             ),
-          if (o.countsAttendance)
+          if (o.subject != null || o.entry.group != null || o.entry.kind != ClassKind.activity)
             _InfoRow(
               Icons.category_outlined,
               o.entry.kind.label,

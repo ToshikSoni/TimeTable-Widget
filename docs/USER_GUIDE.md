@@ -53,9 +53,11 @@ add activities from **Week → + Activity**:
   while it runs. Do Not Disturb needs a one-time permission; Cadence only turns
   it off again if it was the one that turned it on, and alarms still ring.
 
-Routines hide school-only tools (subjects, teachers, groups, attendance). You can
-keep a routine and a class timetable side by side and switch between them in
-*Settings → Timetables*.
+Routines have every feature class timetables have — categories (subjects),
+people, time slots, groups or shifts, attendance and tasks — only the wording
+and defaults differ. You can change a timetable's type any time in
+*Settings → Details & dates*, keep a routine and a class timetable side by side,
+and switch between them in *Settings → Timetables*.
 
 **Moving from the TimeTable app?** Export a backup there (a `.tta` file) and use
 **Settings → Backup & export → Import**. Each of its weeks becomes a routine,

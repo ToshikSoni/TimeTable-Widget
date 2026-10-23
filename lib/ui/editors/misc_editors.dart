@@ -502,23 +502,25 @@ class _TimetableDetailsEditorState extends State<TimetableDetailsEditor> {
           if (_kind == TimetableKind.routine && widget.isNew) _days.addAll([6, 7]);
         }),
       ),
-      if (_kind == TimetableKind.school)
-        TextField(
-          controller: _inst,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            labelText: 'School / university',
-            prefixIcon: Icon(Icons.account_balance_outlined),
-          ),
+      TextField(
+        controller: _inst,
+        textCapitalization: TextCapitalization.words,
+        decoration: InputDecoration(
+          labelText: _kind == TimetableKind.school
+              ? 'School / university'
+              : 'Organisation (optional)',
+          prefixIcon: const Icon(Icons.account_balance_outlined),
         ),
-      if (_kind == TimetableKind.school)
-        TextField(
-          controller: _section,
-          decoration: const InputDecoration(
-            labelText: 'Class / section',
-            prefixIcon: Icon(Icons.groups_outlined),
-          ),
+      ),
+      TextField(
+        controller: _section,
+        decoration: InputDecoration(
+          labelText: _kind == TimetableKind.school
+              ? 'Class / section'
+              : 'Team / department (optional)',
+          prefixIcon: const Icon(Icons.groups_outlined),
         ),
+      ),
       FieldLabel(_kind == TimetableKind.school ? 'Working days' : 'Days shown in the week view'),
       Wrap(
         spacing: 6,

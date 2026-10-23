@@ -44,8 +44,8 @@ jobs:
             echo "::error::'$tag' is not a valid version tag (expected vMAJOR.MINOR.PATCH)"
             exit 1
           fi
-          # 0.x versions and -beta/-rc tags are published as pre-releases.
-          case "$version" in 0.*|*-*) prerelease=true ;; *) prerelease=false ;; esac
+          # Tags with a suffix (-beta.1, -rc.1) are published as pre-releases.
+          case "$version" in *-*) prerelease=true ;; *) prerelease=false ;; esac
           {
             echo "tag=$tag"
             echo "version=$version"
@@ -322,6 +322,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           draft: false
           prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
+          make_latest: ${{ needs.version.outputs.prerelease == 'true' && 'false' || 'true' }}
           generate_release_notes: true
           body_path: release-notes.md
           fail_on_unmatched_files: true

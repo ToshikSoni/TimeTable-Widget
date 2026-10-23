@@ -8,6 +8,15 @@ Versions below 1.0 are previews: things may still change between releases.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-23
+
+### Changed
+
+- Class timetables and daily routines now share every feature: routines can use
+  categories, people, time slots, groups and attendance, and class timetables get
+  per-entry colours and alerts. The type only changes wording and defaults.
+- Releases for 0.x versions are published as regular releases.
+
 ## [0.1.0] - 2026-10-23
 
 First public preview.
@@ -34,5 +43,6 @@ First public preview.
 - Downloads for Windows (installer and portable), Android (APKs), Debian/Ubuntu (`.deb`),
   Fedora/openSUSE (`.rpm`), Arch Linux (`.pkg.tar.zst`), AppImage and a plain tarball.
 
-[Unreleased]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ToshikSoni/TimeTable-Widget/releases/tag/v0.1.0

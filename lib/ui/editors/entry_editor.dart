@@ -60,7 +60,7 @@ class _EntryEditorState extends State<EntryEditor> {
     _group = e?.group;
     _kind = e?.kind ?? (routine ? ClassKind.activity : ClassKind.lecture);
     _days = {e?.weekday ?? widget.weekday ?? widget.date?.weekday ?? DateTime.now().weekday};
-    final periods = routine ? <Period>[] : tt.periods.where((p) => !p.isBreak).toList();
+    final periods = tt.periods.where((p) => !p.isBreak).toList();
     final firstPeriod = periods.isEmpty ? null : periods.first;
     _start = e?.start ?? widget.start ?? firstPeriod?.start ?? 9 * 60;
     final matching = periods.where((p) => p.start == _start);
@@ -118,13 +118,13 @@ class _EntryEditorState extends State<EntryEditor> {
       context.toast('It must end after it starts');
       return;
     }
-    if ((_subjectId == null || routine) && _title.text.trim().isEmpty) {
+    if (_subjectId == null && _title.text.trim().isEmpty) {
       context.toast(routine ? 'Give it a name' : 'Pick a subject or enter a title');
       return;
     }
     final store = context.readStore;
     String? clean(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
-    final subjectId = routine ? null : _subjectId;
+    final subjectId = _subjectId;
     ClassEntry build(int day, {String? id}) => ClassEntry(
       id: id,
       weekday: day,
@@ -133,9 +133,9 @@ class _EntryEditorState extends State<EntryEditor> {
       subjectId: subjectId,
       title: subjectId == null ? clean(_title) : null,
       room: clean(_room),
-      teacherId: routine ? null : _teacherId,
+      teacherId: _teacherId,
       kind: _kind,
-      group: routine ? null : _group,
+      group: _group,
       note: clean(_note),
       color: subjectId == null ? _color : null,
       reminderMinutes: _reminder,
@@ -179,8 +179,8 @@ class _EntryEditorState extends State<EntryEditor> {
     final routine = tt.kind == TimetableKind.routine;
     final noun = tt.kind.item;
     final fmt = context.timeFormat;
-    final periods = routine ? <Period>[] : tt.periods.where((p) => !p.isBreak).toList();
-    final subject = routine ? null : tt.subject(_subjectId);
+    final periods = tt.periods.where((p) => !p.isBreak).toList();
+    final subject = tt.subject(_subjectId);
     final inheritedTeacher = tt.teacher(subject?.teacherId);
     final defaultLead = subject?.reminderMinutes ?? context.settings.reminderMinutes;
 
@@ -193,8 +193,8 @@ class _EntryEditorState extends State<EntryEditor> {
       onSave: _save,
       onDelete: _isNew || _isExtra ? null : _delete,
       children: [
-        if (!routine) ...[
-          const FieldLabel('Subject'),
+        if (!routine || tt.subjects.isNotEmpty) ...[
+          FieldLabel(routine ? 'Category' : 'Subject'),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -208,7 +208,7 @@ class _EntryEditorState extends State<EntryEditor> {
                 ),
               ChoiceChip(
                 avatar: const Icon(Icons.edit_outlined, size: 16),
-                label: const Text('Other'),
+                label: Text(routine ? 'None' : 'Other'),
                 selected: _subjectId == null,
                 onSelected: (_) => setState(() => _subjectId = null),
               ),
@@ -223,7 +223,7 @@ class _EntryEditorState extends State<EntryEditor> {
             ],
           ),
         ],
-        if (routine || _subjectId == null)
+        if (_subjectId == null)
           TextField(
             controller: _title,
             autofocus: routine && _isNew,
@@ -233,7 +233,7 @@ class _EntryEditorState extends State<EntryEditor> {
               hintText: routine ? 'e.g. Gym, Deep work, Commute' : 'e.g. Sports / Library',
             ),
           ),
-        if (routine || _subjectId == null) ...[
+        if (_subjectId == null) ...[
           const FieldLabel('Colour'),
           Wrap(
             spacing: 8,
@@ -262,7 +262,7 @@ class _EntryEditorState extends State<EntryEditor> {
             ],
           ),
         ],
-        if (!routine) ...[
+        ...[
           const FieldLabel('Type'),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -377,12 +377,12 @@ class _EntryEditorState extends State<EntryEditor> {
             prefixIcon: const Icon(Icons.place_outlined),
           ),
         ),
-        if (!routine)
+        if (!routine || tt.teachers.isNotEmpty)
           DropdownButtonFormField<String?>(
             initialValue: _teacherId,
-            decoration: const InputDecoration(
-              labelText: 'Teacher',
-              prefixIcon: Icon(Icons.person_outline_rounded),
+            decoration: InputDecoration(
+              labelText: routine ? 'With' : 'Teacher',
+              prefixIcon: const Icon(Icons.person_outline_rounded),
             ),
             items: [
               DropdownMenuItem(
@@ -401,7 +401,7 @@ class _EntryEditorState extends State<EntryEditor> {
             ],
             onChanged: (v) => setState(() => _teacherId = v),
           ),
-        if (!routine && tt.groups.isNotEmpty)
+        if (tt.groups.isNotEmpty)
           DropdownButtonFormField<String?>(
             initialValue: _group,
             decoration: const InputDecoration(

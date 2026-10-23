@@ -11,7 +11,6 @@ class Occurrence {
     this.cancelled = false,
     this.extra = false,
     this.changeReason,
-    this.countsAttendance = true,
   });
 
   final DateTime date;
@@ -21,9 +20,6 @@ class Occurrence {
   final bool cancelled;
   final bool extra;
   final String? changeReason;
-
-  /// False for routine timetables, which don't track attendance.
-  final bool countsAttendance;
 
   DateTime get start => date.add(Duration(minutes: entry.start));
   DateTime get end => date.add(Duration(minutes: entry.end));
@@ -48,8 +44,7 @@ class Occurrence {
   String get key => attendanceKey(date, entry.id);
 
   /// Whether this occurrence counts towards attendance.
-  bool get tracksAttendance =>
-      countsAttendance && subject != null && entry.kind != ClassKind.activity && !cancelled;
+  bool get tracksAttendance => subject != null && entry.kind != ClassKind.activity && !cancelled;
 
   bool isLiveAt(DateTime t) => !cancelled && !t.isBefore(start) && t.isBefore(end);
 
@@ -162,7 +157,6 @@ class ScheduleEngine {
         if (c.type == ChangeType.cancel && c.entryId != null) c.entryId!: c,
     };
 
-    final school = tt.kind == TimetableKind.school;
     final result = <Occurrence>[
       for (final e in entriesFor(tt, weekday))
         Occurrence(
@@ -172,7 +166,6 @@ class ScheduleEngine {
           teacher: tt.teacher(e.teacherId) ?? tt.teacher(tt.subject(e.subjectId)?.teacherId),
           cancelled: cancelled.containsKey(e.id),
           changeReason: cancelled[e.id]?.reason,
-          countsAttendance: school,
         ),
       for (final c in changes)
         if (c.type == ChangeType.extra && c.extra != null && isVisible(tt, c.extra!))
@@ -185,7 +178,6 @@ class ScheduleEngine {
                 tt.teacher(tt.subject(c.extra!.subjectId)?.teacherId),
             extra: true,
             changeReason: c.reason,
-            countsAttendance: school,
           ),
     ]..sort((a, b) => _byTime(a.entry, b.entry));
 

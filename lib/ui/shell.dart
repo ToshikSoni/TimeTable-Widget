@@ -97,9 +97,7 @@ class _ShellState extends State<Shell> {
   Widget build(BuildContext context) {
     final wide = context.isMedium;
     final badge = _taskBadge(context);
-    // Routines don't track attendance, so that tab is hidden for them.
-    final school = context.store.timetable?.kind != TimetableKind.routine;
-    final visible = [0, 1, 2, if (school) 3, 4];
+    final visible = [0, 1, 2, 3, 4];
     if (!visible.contains(_index)) _index = 0;
 
     Widget icon(int i, bool selected) {

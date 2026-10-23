@@ -118,7 +118,7 @@ void main() {
     expect(windows[1][0], DateTime(2026, 10, 26, 23).millisecondsSinceEpoch);
   });
 
-  test('routines do not track attendance', () {
+  test('activities without a subject are not tracked for attendance', () {
     final routine = buildSampleRoutine();
     final plan = ScheduleEngine.dayPlan(routine, DateTime(2026, 10, 26));
     expect(plan.active, isNotEmpty);

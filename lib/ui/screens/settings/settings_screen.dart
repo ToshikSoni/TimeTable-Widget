@@ -33,6 +33,7 @@ class SettingsScreen extends StatelessWidget {
     final s = store.settings;
     final tt = store.timetable;
     final noun = tt?.kind.item ?? 'class';
+    final school = tt?.kind != TimetableKind.routine;
     final nouns = tt?.kind.items ?? 'classes';
     void set(void Function(Settings s) f) => store.updateSettings(f);
     void push(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
@@ -68,28 +69,32 @@ class SettingsScreen extends StatelessWidget {
                     () => showEditor(context, TimetableDetailsEditor(timetable: tt)),
                   ),
                 ],
-                if (tt != null && tt.kind == TimetableKind.school) ...[
+                if (tt != null) ...[
                   _NavTile(
                     Icons.menu_book_outlined,
-                    'Subjects',
-                    '${tt.subjects.where((x) => x.enrolled).length} of ${tt.subjects.length} enrolled',
+                    school ? 'Subjects' : 'Categories',
+                    school
+                        ? '${tt.subjects.where((x) => x.enrolled).length} of ${tt.subjects.length} enrolled'
+                        : 'Group activities, e.g. Work, Fitness, Study · ${tt.subjects.length}',
                     () => push(const SubjectsPage()),
                   ),
                   _NavTile(
                     Icons.person_outline_rounded,
-                    'Teachers',
-                    '${tt.teachers.length} teachers',
+                    school ? 'Teachers' : 'People',
+                    school
+                        ? '${tt.teachers.length} teachers'
+                        : 'Colleagues, coaches, tutors · ${tt.teachers.length}',
                     () => push(const TeachersPage()),
                   ),
                   _NavTile(
                     Icons.notifications_paused_outlined,
-                    'Bell schedule',
-                    '${tt.periods.where((p) => !p.isBreak).length} periods',
+                    school ? 'Bell schedule' : 'Time slots',
+                    '${tt.periods.where((p) => !p.isBreak).length} ${school ? 'periods' : 'slots'} · quick picks when adding',
                     () => push(const BellSchedulePage()),
                   ),
                   _NavTile(
                     Icons.groups_2_outlined,
-                    'Groups & batches',
+                    school ? 'Groups & batches' : 'Groups / shifts',
                     tt.myGroup == null ? 'Showing all groups' : 'You’re in ${tt.myGroup}',
                     () => push(const GroupsPage()),
                   ),
