@@ -8,6 +8,23 @@ Versions below 1.0 are previews: things may still change between releases.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-22
+
+### Added
+
+- **Focus timer**: focus rounds with short and long breaks, an animated countdown
+  dial, notifications and a chime when each part ends (also with the app in the
+  background on Android), a history with a 7-day chart, streak and time per
+  subject, presets, and optional Do Not Disturb while focusing on Android. Open it
+  from Today, the new Focus tab on tablets and desktop, or the tray menu.
+- **Alternating weeks**: timetables can repeat every week or cycle through
+  Week A / Week B (up to four weeks). Each class can run in some weeks only, and
+  Today and Week show which week it is.
+- **Search and quick actions** (<kbd>Ctrl</kbd>+<kbd>K</kbd>): find classes,
+  subjects, people and tasks, or start a focus session, add a class or task, and
+  mark a holiday.
+- Free gaps on Today have a *Focus* button.
+
 ## [0.1.1] - 2026-10-23
 
 ### Changed
@@ -43,6 +60,7 @@ First public preview.
 - Downloads for Windows (installer and portable), Android (APKs), Debian/Ubuntu (`.deb`),
   Fedora/openSUSE (`.rpm`), Arch Linux (`.pkg.tar.zst`), AppImage and a plain tarball.
 
-[Unreleased]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/ToshikSoni/TimeTable-Widget/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ToshikSoni/TimeTable-Widget/releases/tag/v0.1.0
