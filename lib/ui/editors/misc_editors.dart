@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/formatting.dart';
 import '../../core/models.dart';
+import '../../core/schedule.dart';
 import '../app_scope.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -428,6 +429,8 @@ class _TimetableDetailsEditorState extends State<TimetableDetailsEditor> {
   late DateTime? _until = widget.timetable.validUntil;
   late final Set<int> _days = {...widget.timetable.workingDays};
   late TimetableKind _kind = widget.timetable.kind;
+  late int _rotation = widget.timetable.rotationWeeks;
+  late int _thisWeek = ScheduleEngine.rotationWeek(widget.timetable, DateTime.now());
 
   @override
   void dispose() {
@@ -454,7 +457,11 @@ class _TimetableDetailsEditorState extends State<TimetableDetailsEditor> {
         ..validFrom = _from
         ..validUntil = _until
         ..workingDays = (_days.toList()..sort())
-        ..kind = _kind;
+        ..kind = _kind
+        ..rotationWeeks = _rotation
+        ..rotationStart = _rotation > 1
+            ? ScheduleEngine.rotationStartFor(DateTime.now(), _thisWeek % _rotation)
+            : null;
     }
 
     if (widget.isNew) {
@@ -576,6 +583,48 @@ class _TimetableDetailsEditorState extends State<TimetableDetailsEditor> {
       Text(
         'Outside these dates the timetable stays quiet — handy for exam weeks and vacations.',
         style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
+      ),
+      const FieldLabel('Repeats'),
+      SegmentedButton<int>(
+        showSelectedIcon: false,
+        segments: [
+          const ButtonSegment(value: 1, label: Text('Weekly')),
+          for (var n = 2; n <= maxRotationWeeks; n++)
+            ButtonSegment(value: n, label: Text(n == 2 ? 'A / B' : '$n weeks')),
+        ],
+        selected: {_rotation},
+        onSelectionChanged: (v) => setState(() => _rotation = v.first),
+      ),
+      AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: _rotation <= 1
+            ? const SizedBox(width: double.infinity)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const FieldLabel('This week is'),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (var w = 0; w < _rotation; w++)
+                        ChoiceChip(
+                          label: Text(rotationLabel(w)),
+                          selected: _thisWeek % _rotation == w,
+                          onSelected: (_) => setState(() => _thisWeek = w),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Pick which weeks each ${_kind.item} runs in when you add or edit it. '
+                    'Weeks keep counting through holidays.',
+                    style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
+                  ),
+                ],
+              ),
       ),
     ],
   );

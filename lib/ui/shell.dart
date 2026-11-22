@@ -8,6 +8,8 @@ import '../services/desktop.dart';
 import '../services/notifications.dart';
 import 'app_scope.dart';
 import 'screens/attendance_screen.dart';
+import 'screens/focus_screen.dart';
+import 'screens/search_palette.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/tasks_screen.dart';
 import 'screens/today_screen.dart';
@@ -25,6 +27,7 @@ const _destinations = [
   _Destination('Today', Icons.wb_sunny_outlined, Icons.wb_sunny_rounded),
   _Destination('Week', Icons.calendar_view_week_outlined, Icons.calendar_view_week_rounded),
   _Destination('Tasks', Icons.task_alt_outlined, Icons.task_alt_rounded),
+  _Destination('Focus', Icons.timer_outlined, Icons.timer_rounded),
   _Destination('Attendance', Icons.insights_outlined, Icons.insights_rounded),
   _Destination('Settings', Icons.tune_outlined, Icons.tune_rounded),
 ];
@@ -37,6 +40,8 @@ class Shell extends StatefulWidget {
   State<Shell> createState() => _ShellState();
 }
 
+const _focusTab = 3;
+
 class _ShellState extends State<Shell> {
   int _index = 0;
   final _today = GlobalKey<TodayScreenState>();
@@ -47,6 +52,7 @@ class _ShellState extends State<Shell> {
     TodayScreen(key: _today),
     const WeekScreen(),
     const TasksScreen(),
+    const FocusScreen(),
     const AttendanceScreen(),
     const SettingsScreen(),
   ];
@@ -62,12 +68,22 @@ class _ShellState extends State<Shell> {
   @override
   void dispose() {
     _taps?.cancel();
+    FocusTab.select = null;
     super.dispose();
   }
 
   void _handlePayload(String payload) {
     if (payload.startsWith('task:')) {
       _select(2);
+    } else if (payload == 'focus') {
+      if (context.isMedium) {
+        _select(_focusTab);
+      } else {
+        _select(0);
+        _navigators[0].currentState?.push(
+          MaterialPageRoute(builder: (_) => const FocusScreen(standalone: true)),
+        );
+      }
     } else {
       _select(0);
       final key = payload.startsWith('class:') ? payload.substring(6).split('|').first : null;
@@ -97,8 +113,13 @@ class _ShellState extends State<Shell> {
   Widget build(BuildContext context) {
     final wide = context.isMedium;
     final badge = _taskBadge(context);
-    final visible = [0, 1, 2, 3, 4];
+    // Phones keep five tabs; the focus timer opens from Today instead.
+    final visible = [
+      for (var i = 0; i < _destinations.length; i++)
+        if (wide || i != _focusTab) i,
+    ];
     if (!visible.contains(_index)) _index = 0;
+    FocusTab.select = wide ? () => _select(_focusTab) : null;
 
     Widget icon(int i, bool selected) {
       final d = _destinations[i];
@@ -130,6 +151,10 @@ class _ShellState extends State<Shell> {
           control: true,
         ): () =>
             _select(i),
+      const SingleActivator(LogicalKeyboardKey.keyK, control: true): () {
+        final nav = _navigators[_index].currentState;
+        if (nav != null) showSearchPalette(nav.overlay?.context ?? nav.context);
+      },
       if (DesktopShell.supported)
         const SingleActivator(LogicalKeyboardKey.keyW, control: true, shift: true):
             DesktopShell.instance.toggleWidgetMode,

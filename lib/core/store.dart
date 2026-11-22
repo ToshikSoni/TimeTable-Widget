@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'focus.dart';
 import 'models.dart';
 import 'sample_data.dart';
 import 'tta_import.dart';
@@ -186,6 +187,17 @@ class AppStore extends ChangeNotifier {
 
   void upsertTask(StudyTask task) => update((d) => _upsert(d.tasks, task, (t) => t.id));
   void removeTask(String id) => update((d) => d.tasks.removeWhere((t) => t.id == id));
+
+  // Focus ------------------------------------------------------------------
+
+  void logFocus(FocusSession session) => update((d) {
+    d.focusLog.add(session);
+    if (d.focusLog.length > maxFocusSessions) {
+      d.focusLog.removeRange(0, d.focusLog.length - maxFocusSessions);
+    }
+  });
+
+  void removeFocus(String id) => update((d) => d.focusLog.removeWhere((f) => f.id == id));
 
   // Import / export ----------------------------------------------------------
 

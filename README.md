@@ -48,7 +48,12 @@ No account, no ads, no tracking. Your data stays on your device as a single JSON
 - A morning summary: “5 classes today, 09:30 – 17:30, first up: Cloud Security in BYOD Lab”.
 - **Starts with Windows / your Linux session** and lives in the system tray, so reminders keep coming.
 
+**Focus and find things fast**
+- **Focus timer** with an animated dial: focus rounds, short and long breaks, a notification when each ends, time logged per subject, a 7-day chart and a streak. Optional Do Not Disturb while you focus (Android).
+- **Search everything** with <kbd>Ctrl</kbd> + <kbd>K</kbd>: classes, rooms, teachers and tasks — plus quick actions like “start a focus session”.
+
 **Built for real timetables**
+- **Alternating weeks**: Week A / Week B timetables (or 3- and 4-week cycles) — each class runs in the weeks you choose.
 - **Lab groups / batches** (G1, G2…): pick yours and only your labs appear.
 - **Electives**: switch off the subjects you don't take.
 - **Holidays** and **special days** — including working Saturdays that follow another weekday's timetable.
@@ -70,6 +75,10 @@ No account, no ads, no tracking. Your data stays on your device as a single JSON
 | Daily routine (desktop) | Routine on a phone, early morning |
 | --- | --- |
 | <img src="docs/screenshots/desktop-routine.png" alt="A working-day routine with deep work happening now" width="480"> | <img src="docs/screenshots/phone-routine.png" alt="Sleep carried over from the previous night" width="200"> |
+
+| Focus timer (desktop) | Focus on a phone |
+| --- | --- |
+| <img src="docs/screenshots/desktop-focus.png" alt="The focus timer counting down, with the week's focus history beside it" width="480"> | <img src="docs/screenshots/phone-focus.png" alt="The focus timer on a phone" width="200"> |
 
 | Week | Attendance | Tasks |
 | --- | --- | --- |
@@ -114,7 +123,9 @@ The [user guide](docs/USER_GUIDE.md) walks through everything else, including ho
 
 | Shortcut | Action |
 | --- | --- |
-| <kbd>Ctrl</kbd> + <kbd>1</kbd> … <kbd>5</kbd> | Today, Week, Tasks, Attendance, Settings |
+| <kbd>Ctrl</kbd> + <kbd>1</kbd> … <kbd>6</kbd> | Today, Week, Tasks, Focus, Attendance, Settings |
+| <kbd>Ctrl</kbd> + <kbd>K</kbd> | Search and quick actions |
+| <kbd>Space</kbd> / <kbd>R</kbd> / <kbd>S</kbd> | Focus tab: start or pause, reset, skip |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>W</kbd> | Toggle the desktop widget |
 | Long-press on the week grid | Add a class at that time |
 

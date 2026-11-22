@@ -30,14 +30,24 @@ class DndService {
   }
 
   /// Merged DND windows for the next [days] days.
-  static List<List<int>> windows(AppData data, DateTime now, {int days = 7}) {
+  /// [extra] adds one more window, e.g. a running focus session.
+  static List<List<int>> windows(
+    AppData data,
+    DateTime now, {
+    int days = 7,
+    ({DateTime start, DateTime end})? extra,
+  }) {
     final tt = data.active;
-    if (tt == null) return const [];
     final spans = <List<int>>[];
-    final from = DateTime(now.year, now.month, now.day - 1);
-    for (final o in ScheduleEngine.occurrencesBetween(tt, from, now.add(Duration(days: days)))) {
-      if (!o.entry.doNotDisturb || !o.end.isAfter(now)) continue;
-      spans.add([o.start.millisecondsSinceEpoch, o.end.millisecondsSinceEpoch]);
+    if (extra != null && extra.end.isAfter(now)) {
+      spans.add([extra.start.millisecondsSinceEpoch, extra.end.millisecondsSinceEpoch]);
+    }
+    if (tt != null) {
+      final from = DateTime(now.year, now.month, now.day - 1);
+      for (final o in ScheduleEngine.occurrencesBetween(tt, from, now.add(Duration(days: days)))) {
+        if (!o.entry.doNotDisturb || !o.end.isAfter(now)) continue;
+        spans.add([o.start.millisecondsSinceEpoch, o.end.millisecondsSinceEpoch]);
+      }
     }
     spans.sort((a, b) => a[0].compareTo(b[0]));
     final merged = <List<int>>[];
@@ -51,10 +61,12 @@ class DndService {
     return merged;
   }
 
-  static Future<void> sync(AppData data) async {
+  static Future<void> sync(AppData data, {({DateTime start, DateTime end})? extra}) async {
     if (!supported) return;
     try {
-      await _channel.invokeMethod('schedule', {'windows': windows(data, DateTime.now())});
+      await _channel.invokeMethod('schedule', {
+        'windows': windows(data, DateTime.now(), extra: extra),
+      });
     } catch (e) {
       debugPrint('DND scheduling failed: $e');
     }

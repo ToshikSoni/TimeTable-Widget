@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/formatting.dart';
 import '../../../core/models.dart';
 import '../../../core/palette.dart';
+import '../../../core/schedule.dart';
 import '../../../services/desktop.dart';
 import '../../../services/dnd.dart';
 import '../../../services/home_widget_sync.dart';
@@ -65,7 +66,9 @@ class SettingsScreen extends StatelessWidget {
                   _NavTile(
                     Icons.info_outline_rounded,
                     'Details & dates',
-                    'Name, type, working days, dates',
+                    tt.rotates
+                        ? 'Dates · ${tt.rotationWeeks}-week cycle, this is ${rotationLabel(ScheduleEngine.rotationWeek(tt, DateTime.now()))}'
+                        : 'Name, type, working days, dates, alternating weeks',
                     () => showEditor(context, TimetableDetailsEditor(timetable: tt)),
                   ),
                 ],

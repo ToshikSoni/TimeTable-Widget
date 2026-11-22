@@ -11,6 +11,8 @@ first two sections are enough.
 - [Lab groups, electives and special days](#lab-groups-electives-and-special-days)
 - [Attendance](#attendance)
 - [Tasks and exams](#tasks-and-exams)
+- [Focus timer](#focus-timer)
+- [Search and quick actions](#search-and-quick-actions)
 - [Sharing, backups and calendars](#sharing-backups-and-calendars)
 - [Desktop specifics](#desktop-specifics)
 - [Troubleshooting](#troubleshooting)
@@ -150,6 +152,13 @@ Today):
 **Term dates** (*Settings → Details & dates*): outside these dates the timetable
 stays quiet, which is handy for exam weeks and vacations.
 
+**Alternating weeks** (*Settings → Details & dates → Repeats*): if your timetable
+changes from one week to the next, choose **A / B weeks** (or a 3- or 4-week
+cycle) and tell Cadence which week this is. Then, when you add or edit a class,
+pick the weeks it runs in — *Every week*, *Week A*, *Week B*… Today and Week
+show which week you're in, and reminders, widgets and calendar exports follow
+the cycle. Weeks keep counting through holidays.
+
 ## Attendance
 
 Once a class has started, tick **✓** (attended) or **✕** (missed) on it in Today,
@@ -164,6 +173,33 @@ unmarked classes in one go.
 The **Tasks** tab groups everything by when it's due: overdue, today, tomorrow,
 this week, later. Swipe right to complete, left to delete (with undo). Tasks due
 today show a badge on the tab and also appear on the Today screen.
+
+## Focus timer
+
+A built-in Pomodoro-style timer for study sessions and deep work. Open it from
+the timer button on **Today** (phones) or the **Focus** tab (tablets and
+desktop), or from the tray menu.
+
+- Work for one round (25 minutes by default), take a short break, and after a
+  few rounds take a longer one. The dial counts down and you get a notification
+  and a chime when each part ends — even if the app is in the background.
+- Pick what you're **working on**; Cadence suggests the class that's on now.
+  Your history shows today's sessions, the last seven days and a streak, plus
+  time per subject. Long-press a session to remove it.
+- The **tune** button sets the lengths (or pick a preset such as *Deep 50 / 10*),
+  whether breaks start by themselves and, on Android, whether to silence the
+  phone while you focus.
+- Free gaps between classes on Today have a **Focus** button.
+- On the desktop: <kbd>Space</kbd> starts or pauses, <kbd>R</kbd> resets and
+  <kbd>S</kbd> skips to the next part.
+
+## Search and quick actions
+
+Press <kbd>Ctrl</kbd> + <kbd>K</kbd> (or the search button on Today) to find any
+class, subject, teacher or task. Every word has to match, so *lab fri* finds
+Friday's labs and *nc 01* finds what's in room NC-01. The same box offers quick
+actions: start a focus session, add a class or task, or mark a holiday. Use the
+arrow keys and <kbd>Enter</kbd> to pick a result.
 
 ## Sharing, backups and calendars
 
@@ -181,8 +217,9 @@ All in **Settings → Backup & export**:
 
 ## Desktop specifics
 
-- **Tray icon**: shows the current or next class in its tooltip. Right-click for
-  *Open*, *Show desktop widget* and *Quit*.
+- **Tray icon**: shows the current or next class (or the focus timer) in its
+  tooltip. Right-click for *Open*, *Show desktop widget*, *Start a focus session*
+  and *Quit*.
 - **Closing the window** keeps Cadence running in the tray (turn this off in
   *Settings → Startup*). Reminders only arrive while Cadence is running.
 - **Start at sign-in**: *Settings → Startup*. Cadence starts quietly in the tray.
