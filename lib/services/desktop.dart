@@ -8,6 +8,7 @@ import 'package:window_manager/window_manager.dart';
 import '../core/models.dart';
 import '../core/store.dart';
 import 'autostart.dart';
+import 'focus_timer.dart';
 
 /// Window, tray and autostart integration for Windows and Linux.
 class DesktopShell with WindowListener {
@@ -26,6 +27,7 @@ class DesktopShell with WindowListener {
   tray.TrayIcon? _tray;
   tray.MenuItem? _statusItem;
   tray.MenuItem? _widgetItem;
+  tray.MenuItem? _focusItem;
   Rect? _normalBounds;
   bool _quitting = false;
 
@@ -99,6 +101,8 @@ class DesktopShell with WindowListener {
       menu.addItem(_item('Open Cadence', showMainWindow));
       _widgetItem = _item('Show desktop widget', toggleWidgetMode);
       menu.addItem(_widgetItem);
+      _focusItem = _item('Start a focus session', FocusTimer.instance.toggle);
+      menu.addItem(_focusItem);
       menu.addSeparator();
       menu.addItem(_item('Quit', quit));
 
@@ -129,6 +133,13 @@ class DesktopShell with WindowListener {
     try {
       _tray?.setTooltip('Cadence — $status');
       _statusItem?.label = status;
+    } catch (_) {}
+  }
+
+  /// Keeps the tray's focus item in step with the timer.
+  void updateFocus({required bool running}) {
+    try {
+      _focusItem?.label = running ? 'Pause focus session' : 'Start a focus session';
     } catch (_) {}
   }
 

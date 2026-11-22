@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:uuid/uuid.dart';
 
+import 'focus.dart';
+
 const _uuid = Uuid();
 
 /// Generates a short random identifier for new records.
@@ -214,6 +216,7 @@ class ClassEntry {
     this.reminderMinutes,
     this.alarm = false,
     this.doNotDisturb = false,
+    this.weeks,
   }) : id = id ?? newId();
 
   final String id;
@@ -248,6 +251,13 @@ class ClassEntry {
   /// Silence the phone (Android Do Not Disturb) while this runs.
   final bool doNotDisturb;
 
+  /// For timetables that alternate between weeks (Week A / Week B…): the
+  /// rotation weeks this entry runs in, counted from 0. `null` means every
+  /// week.
+  final List<int>? weeks;
+
+  bool runsInWeek(int week) => weeks == null || weeks!.isEmpty || weeks!.contains(week);
+
   int get duration => end - start;
 
   /// Ends after midnight, e.g. sleep from 23:30 to 07:00.
@@ -272,6 +282,8 @@ class ClassEntry {
     bool clearReminder = false,
     bool? alarm,
     bool? doNotDisturb,
+    List<int>? weeks,
+    bool everyWeek = false,
     bool keepId = true,
   }) => ClassEntry(
     id: keepId ? id : null,
@@ -289,6 +301,7 @@ class ClassEntry {
     reminderMinutes: clearReminder ? null : reminderMinutes ?? this.reminderMinutes,
     alarm: alarm ?? this.alarm,
     doNotDisturb: doNotDisturb ?? this.doNotDisturb,
+    weeks: everyWeek ? null : weeks ?? this.weeks,
   );
 
   Map<String, dynamic> toJson() => {
@@ -307,6 +320,7 @@ class ClassEntry {
     if (reminderMinutes != null) 'reminderMinutes': reminderMinutes,
     if (alarm) 'alarm': true,
     if (doNotDisturb) 'doNotDisturb': true,
+    if (weeks != null && weeks!.isNotEmpty) 'weeks': weeks,
   };
 
   factory ClassEntry.fromJson(Map<String, dynamic> j) => ClassEntry(
@@ -325,6 +339,7 @@ class ClassEntry {
     reminderMinutes: j['reminderMinutes'] as int?,
     alarm: j['alarm'] as bool? ?? false,
     doNotDisturb: j['doNotDisturb'] as bool? ?? false,
+    weeks: (j['weeks'] as List?)?.whereType<int>().toList(),
   );
 }
 
@@ -432,6 +447,12 @@ enum TimetableKind {
   String count(int n) => '$n ${n == 1 ? item : items}';
 }
 
+/// The longest rotation offered (Week A to Week D).
+const maxRotationWeeks = 4;
+
+/// "Week A", "Week B"… for rotation week [index] (0-based).
+String rotationLabel(int index) => 'Week ${String.fromCharCode(65 + index)}';
+
 class Timetable {
   Timetable({
     String? id,
@@ -451,6 +472,8 @@ class Timetable {
     List<String>? groups,
     this.myGroup,
     Map<String, AttendanceStatus>? attendance,
+    this.rotationWeeks = 1,
+    this.rotationStart,
   }) : id = id ?? newId(),
        workingDays = workingDays ?? [1, 2, 3, 4, 5],
        periods = periods ?? [],
@@ -481,6 +504,15 @@ class Timetable {
 
   /// Keyed by [attendanceKey].
   Map<String, AttendanceStatus> attendance;
+
+  /// How many weeks the timetable cycles through: 1 for the same timetable
+  /// every week, 2 for alternating Week A / Week B, and so on.
+  int rotationWeeks;
+
+  /// A Monday that falls in the first rotation week (Week A).
+  DateTime? rotationStart;
+
+  bool get rotates => rotationWeeks > 1;
 
   Subject? subject(String? id) {
     if (id == null) return null;
@@ -519,6 +551,8 @@ class Timetable {
     'groups': groups,
     if (myGroup != null) 'myGroup': myGroup,
     'attendance': attendance.map((k, v) => MapEntry(k, v.name)),
+    if (rotationWeeks > 1) 'rotationWeeks': rotationWeeks,
+    if (rotationStart != null) 'rotationStart': dateKey(rotationStart!),
   };
 
   factory Timetable.fromJson(Map<String, dynamic> j) => Timetable(
@@ -547,6 +581,8 @@ class Timetable {
         ),
       ),
     ),
+    rotationWeeks: ((j['rotationWeeks'] as int?) ?? 1).clamp(1, maxRotationWeeks),
+    rotationStart: j['rotationStart'] == null ? null : parseDateKey(j['rotationStart'] as String),
   );
 
   /// Deep copy with fresh identity, used for "Duplicate timetable".
@@ -669,6 +705,12 @@ class Settings {
     this.widgetWidth = 340,
     this.widgetHeight = 460,
     this.onboarded = false,
+    this.focusMinutes = 25,
+    this.shortBreakMinutes = 5,
+    this.longBreakMinutes = 15,
+    this.focusRounds = 4,
+    this.focusAutoBreaks = true,
+    this.focusDoNotDisturb = false,
   });
 
   ThemeMode themeMode;
@@ -705,6 +747,26 @@ class Settings {
 
   bool onboarded;
 
+  // Focus timer
+  int focusMinutes;
+  int shortBreakMinutes;
+  int longBreakMinutes;
+
+  /// Focus sessions before a long break.
+  int focusRounds;
+
+  /// Start the break straight after a focus session ends.
+  bool focusAutoBreaks;
+
+  /// Android: silence the phone while focusing.
+  bool focusDoNotDisturb;
+
+  int minutesFor(FocusPhase phase) => switch (phase) {
+    FocusPhase.focus => focusMinutes,
+    FocusPhase.shortBreak => shortBreakMinutes,
+    FocusPhase.longBreak => longBreakMinutes,
+  };
+
   Map<String, dynamic> toJson() => {
     'themeMode': themeMode.name,
     if (accent != null) 'accent': accent,
@@ -731,6 +793,12 @@ class Settings {
     'widgetWidth': widgetWidth,
     'widgetHeight': widgetHeight,
     'onboarded': onboarded,
+    'focusMinutes': focusMinutes,
+    'shortBreakMinutes': shortBreakMinutes,
+    'longBreakMinutes': longBreakMinutes,
+    'focusRounds': focusRounds,
+    'focusAutoBreaks': focusAutoBreaks,
+    'focusDoNotDisturb': focusDoNotDisturb,
   };
 
   factory Settings.fromJson(Map<String, dynamic> j) {
@@ -767,6 +835,12 @@ class Settings {
       widgetWidth: (j['widgetWidth'] as num?)?.toDouble() ?? d.widgetWidth,
       widgetHeight: (j['widgetHeight'] as num?)?.toDouble() ?? d.widgetHeight,
       onboarded: j['onboarded'] as bool? ?? d.onboarded,
+      focusMinutes: ((j['focusMinutes'] as int?) ?? d.focusMinutes).clamp(1, 180),
+      shortBreakMinutes: ((j['shortBreakMinutes'] as int?) ?? d.shortBreakMinutes).clamp(1, 60),
+      longBreakMinutes: ((j['longBreakMinutes'] as int?) ?? d.longBreakMinutes).clamp(1, 90),
+      focusRounds: ((j['focusRounds'] as int?) ?? d.focusRounds).clamp(1, 12),
+      focusAutoBreaks: j['focusAutoBreaks'] as bool? ?? d.focusAutoBreaks,
+      focusDoNotDisturb: j['focusDoNotDisturb'] as bool? ?? d.focusDoNotDisturb,
     );
   }
 }
@@ -777,8 +851,10 @@ class AppData {
     this.activeTimetableId,
     List<StudyTask>? tasks,
     Settings? settings,
+    List<FocusSession>? focusLog,
   }) : timetables = timetables ?? [],
        tasks = tasks ?? [],
+       focusLog = focusLog ?? [],
        settings = settings ?? Settings();
 
   static const schemaVersion = 1;
@@ -787,6 +863,9 @@ class AppData {
   String? activeTimetableId;
   List<StudyTask> tasks;
   Settings settings;
+
+  /// Finished focus sessions, oldest first.
+  List<FocusSession> focusLog;
 
   Timetable? get active {
     for (final t in timetables) {
@@ -802,6 +881,7 @@ class AppData {
     if (activeTimetableId != null) 'activeTimetableId': activeTimetableId,
     'tasks': tasks.map((t) => t.toJson()).toList(),
     'settings': settings.toJson(),
+    if (focusLog.isNotEmpty) 'focusLog': focusLog.map((f) => f.toJson()).toList(),
   };
 
   factory AppData.fromJson(Map<String, dynamic> j) => AppData(
@@ -811,6 +891,7 @@ class AppData {
     settings: j['settings'] == null
         ? null
         : Settings.fromJson(j['settings'] as Map<String, dynamic>),
+    focusLog: _list(j['focusLog'], FocusSession.fromJson),
   );
 }
 
@@ -831,3 +912,6 @@ DateTime parseDateKey(String key) {
 String attendanceKey(DateTime date, String entryId) => '${dateKey(date)}|$entryId';
 
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// The Monday of the week containing [d].
+DateTime mondayOf(DateTime d) => DateTime(d.year, d.month, d.day - (d.weekday - 1));

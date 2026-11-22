@@ -149,6 +149,12 @@ class ClassTile extends StatelessWidget {
             if (o.entry.kind != ClassKind.lecture && o.entry.kind != ClassKind.activity)
               Tag(o.entry.kind.label.toUpperCase(), color: tone.accent, dense: true),
             if (o.entry.group != null) Tag(o.entry.group!, color: tone.accent, dense: true),
+            if (o.entry.weeks != null && o.entry.weeks!.isNotEmpty)
+              Tag(
+                o.entry.weeks!.map((w) => String.fromCharCode(65 + w)).join('/'),
+                color: tone.accent,
+                dense: true,
+              ),
             if (o.extra) Tag('EXTRA', color: context.colors.tertiary, dense: true),
             if (o.cancelled) Tag('CANCELLED', color: context.colors.error, dense: true),
             if (carried) Tag('SINCE YESTERDAY', color: tone.accent, dense: true),
@@ -241,10 +247,14 @@ class GapTile extends StatelessWidget {
     required this.label,
     required this.duration,
     this.icon = Icons.coffee_outlined,
+    this.action,
   });
   final String label;
   final Duration duration;
   final IconData icon;
+
+  /// Shown at the end of the line, e.g. a button to start focusing.
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -264,6 +274,7 @@ class GapTile extends StatelessWidget {
             painter: _DashPainter(context.colors.outlineVariant),
           ),
         ),
+        if (action != null) ...[const SizedBox(width: 6), action!],
       ],
     ),
   );
@@ -376,6 +387,12 @@ class _ClassDetails extends StatelessWidget {
               Icons.category_outlined,
               o.entry.kind.label,
               o.entry.group == null ? 'Everyone' : 'Group ${o.entry.group}',
+            ),
+          if (o.entry.weeks != null && o.entry.weeks!.isNotEmpty)
+            _InfoRow(
+              Icons.event_repeat_rounded,
+              o.entry.weeks!.map(rotationLabel).join(', '),
+              'Runs in',
             ),
           if (o.entry.alarm || o.entry.doNotDisturb)
             _InfoRow(

@@ -13,6 +13,7 @@ import 'core/schedule.dart';
 import 'core/store.dart';
 import 'services/desktop.dart';
 import 'services/dnd.dart';
+import 'services/focus_timer.dart';
 import 'services/home_widget_sync.dart';
 import 'services/notifications.dart';
 import 'ui/app_scope.dart';
@@ -47,6 +48,9 @@ class _CadenceAppState extends State<CadenceApp> with WidgetsBindingObserver {
     store.addListener(_onDataChanged);
     _clock.addListener(_onTick);
     NotificationService.instance.startTicker();
+    FocusTimer.instance
+      ..attach(store)
+      ..onStateChanged = _onFocusChanged;
     _hourly = Timer.periodic(const Duration(hours: 1), (_) => _sync());
     _sync();
   }
@@ -64,6 +68,7 @@ class _CadenceAppState extends State<CadenceApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      FocusTimer.instance.check();
       _clock.refresh();
       _sync();
     } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
@@ -81,7 +86,15 @@ class _CadenceAppState extends State<CadenceApp> with WidgetsBindingObserver {
   Future<void> _sync() async {
     await NotificationService.instance.reschedule(store.data, use24h: _use24h);
     await HomeWidgetSync.push(store.data, use24h: _use24h);
-    await DndService.sync(store.data);
+    await DndService.sync(store.data, extra: FocusTimer.instance.doNotDisturbWindow);
+    _updateTray();
+  }
+
+  void _onFocusChanged() {
+    DndService.sync(store.data, extra: FocusTimer.instance.doNotDisturbWindow);
+    if (DesktopShell.supported) {
+      DesktopShell.instance.updateFocus(running: FocusTimer.instance.running);
+    }
     _updateTray();
   }
 
@@ -101,8 +114,11 @@ class _CadenceAppState extends State<CadenceApp> with WidgetsBindingObserver {
     final fmt = TimeFormat(_use24h);
     final live = ScheduleEngine.current(tt, now);
     final next = ScheduleEngine.next(tt, now);
+    final focus = FocusTimer.instance;
     final String status;
-    if (live != null) {
+    if (focus.running) {
+      status = '${focus.phase.label} · ends at ${fmt.time(focus.endsAt!)}';
+    } else if (live != null) {
       status = 'Now: ${live.shortTitle} until ${fmt.time(live.end)}';
     } else if (next != null) {
       final day = dateOnlyIsToday(next.start, now) ? '' : '${relativeDay(next.start, now)} ';

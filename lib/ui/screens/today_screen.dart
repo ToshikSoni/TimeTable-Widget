@@ -12,6 +12,9 @@ import '../widgets/class_tile.dart';
 import '../widgets/common.dart';
 import '../widgets/illustrations.dart';
 import '../widgets/now_card.dart';
+import '../../services/focus_timer.dart';
+import 'focus_screen.dart';
+import 'search_palette.dart';
 import 'no_timetable.dart';
 
 class TodayScreen extends StatefulWidget {
@@ -48,6 +51,9 @@ class TodayScreenState extends State<TodayScreen> {
                   child: _Header(
                     date: selected,
                     now: now,
+                    week: tt.rotates
+                        ? rotationLabel(ScheduleEngine.rotationWeek(tt, selected))
+                        : null,
                     onPickDate: () async {
                       final d = await showDatePicker(
                         context: context,
@@ -183,45 +189,126 @@ class _AddOption extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.date, required this.now, required this.onPickDate, this.onToday});
+  const _Header({
+    required this.date,
+    required this.now,
+    required this.onPickDate,
+    this.onToday,
+    this.week,
+  });
   final DateTime date;
   final DateTime now;
+  final String? week;
   final VoidCallback onPickDate;
   final VoidCallback? onToday;
 
   @override
   Widget build(BuildContext context) {
     final isToday = onToday == null;
+    final label = Text(
+      [isToday ? greeting(now) : relativeDay(date, now), ?week].join(' · '),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: context.text.titleSmall?.copyWith(color: context.colors.primary),
+    );
+    final title = Text(DateFormat('EEEE, d MMMM').format(date), style: context.text.headlineSmall);
+    final actions = <Widget>[
+      if (onToday != null)
+        TextButton.icon(
+          onPressed: onToday,
+          icon: const Icon(Icons.today_rounded, size: 18),
+          label: const Text('Today'),
+        ),
+      const _FocusButton(),
+      IconButton(
+        tooltip: 'Search (Ctrl+K)',
+        onPressed: () => showSearchPalette(context),
+        icon: const Icon(Icons.search_rounded),
+      ),
+      IconButton(
+        tooltip: 'Pick a date',
+        onPressed: onPickDate,
+        icon: const Icon(Icons.calendar_month_outlined),
+      ),
+    ];
+
+    // Phones: buttons share the top line with the greeting so the date gets
+    // the full width.
+    if (!context.isMedium) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: label),
+              ...actions,
+            ],
+          ),
+          title,
+        ],
+      );
+    }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isToday ? greeting(now) : relativeDay(date, now),
-                style: context.text.titleSmall?.copyWith(color: context.colors.primary),
-              ),
-              const SizedBox(height: 2),
-              Text(DateFormat('EEEE, d MMMM').format(date), style: context.text.headlineSmall),
-            ],
+            children: [label, const SizedBox(height: 2), title],
           ),
         ),
-        if (onToday != null)
-          TextButton.icon(
-            onPressed: onToday,
-            icon: const Icon(Icons.today_rounded, size: 18),
-            label: const Text('Today'),
-          ),
-        IconButton(
-          tooltip: 'Pick a date',
-          onPressed: onPickDate,
-          icon: const Icon(Icons.calendar_month_outlined),
-        ),
+        ...actions,
       ],
     );
   }
+}
+
+/// Opens the focus timer; shows the time left while a session runs.
+class _FocusButton extends StatelessWidget {
+  const _FocusButton();
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: FocusTimer.instance,
+    builder: (context, _) {
+      final t = FocusTimer.instance;
+      final c = context.colors;
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (child, a) => FadeTransition(
+          opacity: a,
+          child: SizeTransition(sizeFactor: a, axis: Axis.horizontal, child: child),
+        ),
+        child: t.idle
+            ? IconButton(
+                key: const ValueKey('idle'),
+                tooltip: 'Focus timer',
+                onPressed: () => openFocus(context),
+                icon: const Icon(Icons.timer_outlined),
+              )
+            : Padding(
+                key: const ValueKey('active'),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ActionChip(
+                  tooltip: 'Open the focus timer',
+                  onPressed: () => openFocus(context),
+                  avatar: Icon(
+                    t.running ? Icons.timer_rounded : Icons.pause_rounded,
+                    size: 18,
+                    color: t.phase.isBreak ? c.tertiary : c.primary,
+                  ),
+                  label: Text(
+                    _clock(t.remaining),
+                    style: context.text.labelLarge?.copyWith(fontFeatures: tabular),
+                  ),
+                ),
+              ),
+      );
+    },
+  );
+
+  static String _clock(Duration d) =>
+      '${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
 }
 
 class _WeekStrip extends StatelessWidget {
@@ -484,7 +571,18 @@ class _DayBody extends StatelessWidget {
           out.add(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              child: GapTile(label: 'Free', duration: gap),
+              child: GapTile(
+                label: 'Free',
+                duration: gap,
+                action: isToday && o.start.isAfter(now) && o.start.difference(now).inMinutes >= 20
+                    ? TextButton.icon(
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        onPressed: () => openFocus(context),
+                        icon: const Icon(Icons.timer_outlined, size: 16),
+                        label: const Text('Focus'),
+                      )
+                    : null,
+              ),
             ),
           );
         }

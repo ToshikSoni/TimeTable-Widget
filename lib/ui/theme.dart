@@ -131,7 +131,10 @@ class AppTheme {
         elevation: 0,
         backgroundColor: scheme.surfaceContainer,
         indicatorColor: scheme.secondaryContainer,
-        labelTextStyle: WidgetStatePropertyAll(text.labelMedium),
+        // Small enough that "Attendance" fits on 360 dp phones.
+        labelTextStyle: WidgetStatePropertyAll(
+          text.labelMedium?.copyWith(fontSize: 12, letterSpacing: 0),
+        ),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: scheme.surfaceContainerLow,

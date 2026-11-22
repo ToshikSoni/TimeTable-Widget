@@ -112,12 +112,37 @@ class ScheduleEngine {
     return true;
   }
 
-  /// Weekly entries for [weekday] after group and elective filtering.
-  static List<ClassEntry> entriesFor(Timetable tt, int weekday, {bool filtered = true}) {
+  /// Weekly entries for [weekday] after group and elective filtering. With
+  /// [week] set, only entries that run in that rotation week are returned.
+  static List<ClassEntry> entriesFor(Timetable tt, int weekday, {bool filtered = true, int? week}) {
     final list =
-        tt.entries.where((e) => e.weekday == weekday && (!filtered || isVisible(tt, e))).toList()
+        tt.entries
+            .where(
+              (e) =>
+                  e.weekday == weekday &&
+                  (!filtered || isVisible(tt, e)) &&
+                  (week == null || e.runsInWeek(week)),
+            )
+            .toList()
           ..sort(_byTime);
     return list;
+  }
+
+  /// Which rotation week (0 = Week A) [date] falls in. Always 0 for
+  /// timetables that are the same every week.
+  static int rotationWeek(Timetable tt, DateTime date) {
+    if (!tt.rotates) return 0;
+    final anchor = mondayOf(tt.rotationStart ?? tt.validFrom ?? DateTime(2024, 1, 1));
+    // Rounding keeps daylight-saving shifts from nudging the count.
+    final weeks = (mondayOf(date).difference(anchor).inHours / (24 * 7)).round();
+    return weeks % tt.rotationWeeks;
+  }
+
+  /// A Monday to store as [Timetable.rotationStart] so that the week
+  /// containing [date] becomes rotation week [week].
+  static DateTime rotationStartFor(DateTime date, int week) {
+    final monday = mondayOf(date);
+    return DateTime(monday.year, monday.month, monday.day - 7 * week);
   }
 
   static DayPlan dayPlan(Timetable tt, DateTime day) {
@@ -158,7 +183,7 @@ class ScheduleEngine {
     };
 
     final result = <Occurrence>[
-      for (final e in entriesFor(tt, weekday))
+      for (final e in entriesFor(tt, weekday, week: rotationWeek(tt, date)))
         Occurrence(
           date: date,
           entry: e,

@@ -13,6 +13,7 @@ import 'alarm_player.dart';
 const _snoozeAction = 'snooze';
 const _dismissAction = 'dismiss';
 const snoozeMinutes = 5;
+const _focusNotificationId = 770077;
 
 /// Schedules class reminders, the daily summary, task reminders and the
 /// morning alarm.
@@ -39,6 +40,10 @@ class NotificationService {
   Timer? _ticker;
   DateTime _lastTick = DateTime.now();
   final _fired = <String>{};
+
+  /// The pending "focus session finished" notification (Android), kept so it
+  /// survives [reschedule] clearing the queue.
+  ({DateTime at, String title, String body})? _focusEnd;
 
   Stream<String> get taps => _taps.stream;
   bool get _android => !kIsWeb && Platform.isAndroid;
@@ -161,6 +166,64 @@ class NotificationService {
         debugPrint('Could not schedule ${r.key}: $e');
       }
     }
+    final focus = _focusEnd;
+    if (focus != null && focus.at.isAfter(DateTime.now())) {
+      await _scheduleFocusAndroid(focus.at, focus.title, focus.body, exact);
+    }
+  }
+
+  // Focus timer ---------------------------------------------------------------
+
+  /// Hands the end of a focus phase to the system so the notification still
+  /// arrives if Android suspends the app. Desktop shows it in-process.
+  Future<void> scheduleFocusEnd(DateTime at, String title, String body) async {
+    _focusEnd = (at: at, title: title, body: body);
+    if (!_android || !_ready) return;
+    await _scheduleFocusAndroid(at, title, body, await canScheduleExact());
+  }
+
+  Future<void> _scheduleFocusAndroid(DateTime at, String title, String body, bool exact) async {
+    try {
+      await _plugin.zonedSchedule(
+        id: _focusNotificationId,
+        title: title,
+        body: body,
+        payload: 'focus',
+        scheduledDate: tz.TZDateTime.from(at, tz.UTC),
+        notificationDetails: _focusDetails,
+        androidScheduleMode: exact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    } catch (e) {
+      debugPrint('Could not schedule the focus notification: $e');
+    }
+  }
+
+  Future<void> cancelFocusEnd() async {
+    _focusEnd = null;
+    if (!_ready) return;
+    try {
+      await _plugin.cancel(id: _focusNotificationId);
+    } catch (_) {}
+  }
+
+  /// Called when a phase ends while the app is running. On Android the
+  /// scheduled notification is already on its way, so only desktop shows one.
+  Future<void> focusFinished(String title, String body) async {
+    _focusEnd = null;
+    if (!_desktop || !_ready) return;
+    try {
+      await _plugin.show(
+        id: _focusNotificationId,
+        title: title,
+        body: body,
+        payload: 'focus',
+        notificationDetails: _focusDetails,
+      );
+    } catch (e) {
+      debugPrint('Could not show notification: $e');
+    }
   }
 
   /// Starts the in-process ticker. On Android it only raises the in-app
@@ -270,6 +333,20 @@ class NotificationService {
     _taps.close();
   }
 }
+
+const _focusDetails = NotificationDetails(
+  android: AndroidNotificationDetails(
+    'focus_v1',
+    'Focus timer',
+    channelDescription: 'When a focus session or break ends',
+    importance: Importance.high,
+    priority: Priority.high,
+    category: AndroidNotificationCategory.reminder,
+    sound: RawResourceAndroidNotificationSound('cadence_chime'),
+    visibility: NotificationVisibility.public,
+  ),
+  linux: LinuxNotificationDetails(urgency: LinuxNotificationUrgency.normal),
+);
 
 NotificationDetails _details(ReminderKind kind) {
   switch (kind) {

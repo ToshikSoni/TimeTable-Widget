@@ -72,7 +72,9 @@ class _WeekScreenState extends State<WeekScreen> {
           children: [
             Text(thisWeek ? 'This week' : 'Week', style: context.text.titleLarge),
             Text(
-              rangeLabel,
+              tt.rotates
+                  ? '$rangeLabel · ${rotationLabel(ScheduleEngine.rotationWeek(tt, monday))}'
+                  : rangeLabel,
               style: context.text.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),
             ),
           ],

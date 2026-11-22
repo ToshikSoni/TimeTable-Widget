@@ -40,6 +40,7 @@ class _EntryEditorState extends State<EntryEditor> {
   int? _reminder;
   bool _alarm = false;
   bool _dnd = false;
+  Set<int> _weeks = {};
   bool _initialised = false;
 
   bool get _isNew => widget.entry == null;
@@ -69,6 +70,7 @@ class _EntryEditorState extends State<EntryEditor> {
     _reminder = e?.reminderMinutes;
     _alarm = e?.alarm ?? false;
     _dnd = e?.doNotDisturb ?? false;
+    _weeks = {...?e?.weeks};
   }
 
   int _unusedColor(Timetable tt) {
@@ -123,6 +125,7 @@ class _EntryEditorState extends State<EntryEditor> {
       return;
     }
     final store = context.readStore;
+    final tt = store.timetable!;
     String? clean(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
     final subjectId = _subjectId;
     ClassEntry build(int day, {String? id}) => ClassEntry(
@@ -141,6 +144,9 @@ class _EntryEditorState extends State<EntryEditor> {
       reminderMinutes: _reminder,
       alarm: _alarm,
       doNotDisturb: _dnd,
+      weeks: _isExtra || !tt.rotates || _weeks.isEmpty || _weeks.length >= tt.rotationWeeks
+          ? null
+          : (_weeks.toList()..sort()),
     );
 
     if (_isExtra) {
@@ -308,6 +314,31 @@ class _EntryEditorState extends State<EntryEditor> {
                 ActionChip(
                   label: const Text('Weekdays'),
                   onPressed: () => setState(() => _days = {1, 2, 3, 4, 5}),
+                ),
+            ],
+          ),
+        ],
+        if (!_isExtra && tt.rotates) ...[
+          const FieldLabel('Weeks'),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              FilterChip(
+                showCheckmark: false,
+                label: const Text('Every week'),
+                selected: _weeks.isEmpty || _weeks.length >= tt.rotationWeeks,
+                onSelected: (_) => setState(() => _weeks = {}),
+              ),
+              for (var w = 0; w < tt.rotationWeeks; w++)
+                FilterChip(
+                  showCheckmark: false,
+                  label: Text(rotationLabel(w)),
+                  selected: _weeks.contains(w) && _weeks.length < tt.rotationWeeks,
+                  onSelected: (on) => setState(() {
+                    if (_weeks.length >= tt.rotationWeeks) _weeks = {};
+                    on ? _weeks.add(w) : _weeks.remove(w);
+                  }),
                 ),
             ],
           ),
